@@ -28,3 +28,6 @@ wheels/
 
 # Docker
 *.log
+
+# Temp folder
+temp/
