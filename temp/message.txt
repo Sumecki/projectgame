@@ -1,0 +1,80 @@
+## 🛠️ Wybrane API i Dokumentacja
+*   Główne API: [RAWG API](https://rawg.io/apidocs)
+*   Dokumentacja pomocnicza:
+    *   [FastAPI Docs](https://fastapi.tiangolo.com/)
+    *   [Pydantic v2 Docs](https://docs.pydantic.dev/latest/) (Walidacja danych).
+    *   [SQLAlchemy 2.0](https://docs.sqlalchemy.org/en/20/) (Zalecany ORM).
+    *   [Alembic](https://alembic.sqlalchemy.org/en/latest/) (Migracje bazy danych).
+
+## 🗓️ Kamienie Milowe Projektu
+
+### Faza 1: Fundamenty i Środowisko 
+Cel: Przygotowanie "czystego" szkieletu aplikacji zgodnie z nowoczesnymi standardami.
+
+1.  Inicjalizacja projektu:
+    *   Użyj `uv` do zarządzania zależnościami: `uv init`.
+    *   Skonfiguruj `ruff` (linter i formatter) w pliku `pyproject.toml`.
+    *   Przygotuj `.gitignore` (Python, Docker, .env).
+2.  Konteneryzacja:
+    *   Stwórz `Dockerfile`
+    *   Stwórz `docker-compose.yml` (baza danych powinna być dostępna w kontenerze, zwróć uwagę byś nie instalował jej na swojej lokalnej maszynie).
+3.  Struktura folderów:
+    ```text
+    app/
+    ├── api/           # Routery (do poczytania w dokumentacji FastAPI)
+    ├── core/          # Konfiguracja (config.py, auth.py)
+    ├── models/        # Modele SQLAlchemy
+    ├── schemas/       # Modele Pydantic
+    ├── services/      # Logika biznesowa i integracje (OpenAI, RAWG)
+    └── main.py     # Mózg aplikacji
+    ```
+
+### Faza 2: Baza Danych i Modele
+Cel: Połączenie z bazą i zdefiniowanie struktury danych gier.
+
+1.  Modele Pydantic (Schemas): Stwórz modele dla `Game`, `User` oraz `Token`.
+2.  Modele SQLAlchemy: Odwzoruj strukturę w bazie danych. Pamiętaj o relacji użytkownik <-> ulubione gry.
+3.  CRUD: Napisz podstawowe funkcje asynchroniczne (`async def`) do dodawania i pobierania gier z lokalnej bazy.
+4.  Alembic: Zainicjuj migracje bazy danych.
+
+### Faza 3: Integracja RAWG i FastAPI Routery
+Cel: Pobieranie danych z zewnętrznego świata.
+
+1.  Klient API: Stwórz asynchroniczny serwis (używając `httpx`), który odpytuje RAWG API o konkretne tytuły (np. "Resident Evil").
+2.  Routery: Podziel aplikację na `/auth`, `/games` i `/ai`.
+3.  Logic: Stwórz endpoint `POST /games/sync/{title}`, który pobiera dane z RAWG i zapisuje je do Twojej bazy. A także endpoint typu GET/ DELETE/PUT
+
+### Faza 4: Bezpieczeństwo i JWT 
+Cel: Ograniczenie dostępu do CRUDa.
+
+1.  OAuth2 Password Flow: Implementacja logowania.
+2.  JWT: Generowanie tokenów z czasem wygaśnięcia.
+3.  Dependency Injection: Stwórz funkcję `get_current_user`, która będzie wstrzykiwana do chronionych endpointów. (Doczytaj o dependency w nastąpi)
+
+### Faza 5: Inteligencja (OpenAI SDK) i Cron
+Cel: Wykorzystanie LLM do interakcji z danymi.
+
+1.  AI Service: Napisz funkcję, która bierze opis gry z bazy i prosi OpenAI o:
+    *   "Napisz recenzję tej gry w klimacie horroru klasy B". (Albo cokolwiek innego co wymyślisz)
+    *   "Stwórz statystyki postaci do gry RPG na podstawie tego opisu".
+2.  Cronjob: Użyj prostego `BackgroundTasks` w FastAPI, aby raz dziennie aktualizować oceny (metacritic) gier w bazie. (Albo cokolwiek innego, chodzi o to abyś poznał CRON Joby i po co one są)
+3.  System Prompt: Przygotuj `instructions.md` dla LLM (np. "Jesteś ekspertem od survival horroru...").
+
+### Faza 6: Deployment i Wykończenie (
+1.  Readme.md: Opisz architekturę, instrukcję `docker-compose up` i listę endpointów.
+2.  SemVer: Dodaj `CHANGELOG.md` i nadaj tag wersji v1.0.0.
+3.  Cloud: AWS/ Azure lub Heroku.
+
+---
+
+## 📝 Szczegółowe polecenie dla AI (Cursor/Claude)
+Skopiuj to do pliku `.cursorrules` lub użyj jako promptu startowego jeśli będziesz pisał kod z LLMem, ale najlepiej rób tak jak ustaliliśmy. Jeśli będziesz czuł, że potrzebujesz pomocy LLMa to proś go o konkretne rzeczy, ponieważ może zrobić za Ciebie więcej niż byś chciał:
+
+> "Działaj jako Senior Python Developer. Budujemy backend w FastAPI. 
+> Zasady: 
+> 1. Używamy asynchronicznego SQLAlchemy 2.0 i Pydantic v2. 
+> 2. Cała komunikacja zewnętrzna (RAWG API, OpenAI) musi być asynchroniczna (httpx). 
+> 3. Kod musi być zgodny z ruff (formatowanie i linting). 
+> 4. Modele danych gier muszą zawierać pola: id, title, description, release_date, genre, rating. 
+> 5. Każdy endpoint musi mieć poprawną obsługę błędów (HTTPException).
+> 6. Klucze API przechowujemy w `.env` i wczytujemy przez `pydantic-settings`."
