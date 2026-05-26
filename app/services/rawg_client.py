@@ -2,6 +2,7 @@ import asyncio
 
 import httpx
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from typing import Any
 
 
 class Settings(BaseSettings):
@@ -20,12 +21,12 @@ def build_auth_params() -> dict[str, str]:
 
 async def make_request(
         path : str,
-        params: dict | None = None,
+        params: dict[str, Any] | None = None,
         timeout: float = 10.0,
-):
+) -> dict[str, Any]:
     request_params = build_auth_params()
 
-    if params:
+    if params is not None:
         request_params.update(params)
 
     async with httpx.AsyncClient(
@@ -37,14 +38,14 @@ async def make_request(
         return response.json()
 
 
-async def search_games(name: str):
+async def search_games(name: str) -> dict[str, Any]:
     return await make_request(
         "/games",
         params={"search": name} 
     )
     
 
-async def get_game(game_id: int | str):
+async def get_game(game_id: int | str) -> dict[str, Any]:
     return await make_request(f"/games/{game_id}")
     
 
@@ -56,7 +57,10 @@ async def get_game_description_by_name(name:str) -> str | None:
     if not results:
         return None
     
-    game_id = results[0]["id"]
+    game_id = results[0].get("id")
+
+    if game_id is None:
+        return None
 
     game_data = await get_game(game_id)
 
