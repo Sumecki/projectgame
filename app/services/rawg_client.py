@@ -18,33 +18,34 @@ def build_auth_params() -> dict[str, str]:
     return {"key": settings.rawg_api_key}
 
 
-async def search_games(name: str, timeout: float = 10):
+async def make_request(
+        path : str,
+        params: dict | None = None,
+        timeout: float = 10.0,
+):
+    request_params = build_auth_params()
+
+    if params:
+        request_params.update(params)
+
     async with httpx.AsyncClient(
         base_url=settings.rawg_base_url,
-        timeout=timeout
+        timeout=timeout,
     ) as client:
-        response = await client.get(
-            f"/games",
-            params={
-                **build_auth_params(),
-                "search": name
-            },
-        )
+        response = await client.get(path, params=request_params)
         response.raise_for_status()
         return response.json()
+
+
+async def search_games(name: str):
+    return await make_request(
+        "/games",
+        params={"search": name} 
+    )
     
 
-async def get_game(game_id: int | str, timeout: float = 10.0):
-    async with httpx.AsyncClient(
-        base_url=settings.rawg_base_url,
-        timeout=timeout
-    ) as client:
-        response = await client.get(
-            f"/games/{game_id}",
-            params=build_auth_params(),
-        )
-        response.raise_for_status()
-        return response.json()
+async def get_game(game_id: int | str):
+    return await make_request(f"/games/{game_id}")
     
 
 async def get_game_description_by_name(name:str) -> str | None:
@@ -63,7 +64,7 @@ async def get_game_description_by_name(name:str) -> str | None:
 
 async def main():
     try:
-        description = await get_game_description_by_name("witcher 2")
+        description = await get_game_description_by_name("gta")
 
         if description is None:
             print("Game not found")
