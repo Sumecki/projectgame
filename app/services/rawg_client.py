@@ -14,61 +14,68 @@ class Settings(BaseSettings):
 
 settings = Settings()
 
+class RawgApiClient:
+    def __init__(self) -> None:
+        self.base_url = settings.rawg_base_url
+        self.api_key = settings.rawg_api_key
 
-def build_auth_params() -> dict[str, str]:
-    return {"key": settings.rawg_api_key}
-
-
-async def make_request(
-        path : str,
-        params: dict[str, Any] | None = None,
-        timeout: float = 10.0,
-) -> dict[str, Any]:
-    request_params = build_auth_params()
-
-    if params is not None:
-        request_params.update(params)
-
-    async with httpx.AsyncClient(
-        base_url=settings.rawg_base_url,
-        timeout=timeout,
-    ) as client:
-        response = await client.get(path, params=request_params)
-        response.raise_for_status()
-        return response.json()
+    def _build_auth_params(self) -> dict[str, str]:
+        return {"key": self.api_key}
 
 
-async def search_games(name: str) -> dict[str, Any]:
-    return await make_request(
-        "/games",
-        params={"search": name} 
-    )
-    
+    async def _make_request(
+            self,
+            path : str,
+            params: dict[str, Any] | None = None,
+            timeout: float = 10.0,
+    ) -> dict[str, Any]:
+        request_params = self._build_auth_params()
 
-async def get_game(game_id: int | str) -> dict[str, Any]:
-    return await make_request(f"/games/{game_id}")
-    
+        if params is not None:
+            request_params.update(params)
 
-async def get_game_description_by_name(name:str) -> str | None:
-    search_data = await search_games(name)
+        async with httpx.AsyncClient(
+            base_url=self.base_url,
+            timeout=timeout,
+        ) as client:
+            response = await client.get(path, params=request_params)
+            response.raise_for_status()
+            return response.json()
 
-    results = search_data.get("results", [])
 
-    if not results:
-        return None
-    
-    game_id = results[0].get("id")
+    async def search_games(self, name: str) -> dict[str, Any]:
+        return await self._make_request(
+            "/games",
+            params={"search": name} 
+        )
+        
 
-    if game_id is None:
-        return None
+    async def get_game(self, game_id: int | str) -> dict[str, Any]:
+        return await self._make_request(f"/games/{game_id}")
+        
 
-    game_data = await get_game(game_id)
+    async def get_game_description_by_name(self, name:str) -> str | None:
+        search_data = await self.search_games(name)
 
-    return game_data.get("description_raw")
+        results = search_data.get("results", [])
+
+        if not results:
+            return None
+        
+        game_id = results[0].get("id")
+
+        if game_id is None:
+            return None
+
+        game_data = await self.get_game(game_id)
+
+        return game_data.get("description_raw")
 
 async def main():
+    client = RawgApiClient()
+
     try:
-        description = await get_game_description_by_name("gta")
+        description = await client.get_game_description_by_name("witcher 2")
 
         if description is None:
             print("Game not found")
