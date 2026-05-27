@@ -1,18 +1,10 @@
 import asyncio
-
-import httpx
-from pydantic_settings import BaseSettings, SettingsConfigDict
 from typing import Any
 
+import httpx
 
-class Settings(BaseSettings):
-    rawg_api_key: str
-    rawg_base_url: str
+from app.core.config import settings
 
-    model_config = SettingsConfigDict(env_file=".env")
-
-
-settings = Settings()
 
 class RawgApiClient:
     def __init__(self) -> None:
@@ -22,12 +14,11 @@ class RawgApiClient:
     def _build_auth_params(self) -> dict[str, str]:
         return {"key": self.api_key}
 
-
     async def _make_request(
-            self,
-            path : str,
-            params: dict[str, Any] | None = None,
-            timeout: float = 10.0,
+        self,
+        path: str,
+        params: dict[str, Any] | None = None,
+        timeout: float = 10.0,
     ) -> dict[str, Any]:
         request_params = self._build_auth_params()
 
@@ -42,26 +33,20 @@ class RawgApiClient:
             response.raise_for_status()
             return response.json()
 
-
     async def search_games(self, name: str) -> dict[str, Any]:
-        return await self._make_request(
-            "/games",
-            params={"search": name} 
-        )
-        
+        return await self._make_request("/games", params={"search": name})
 
     async def get_game(self, game_id: int | str) -> dict[str, Any]:
         return await self._make_request(f"/games/{game_id}")
-        
 
-    async def get_game_description_by_name(self, name:str) -> str | None:
+    async def get_game_description_by_name(self, name: str) -> str | None:
         search_data = await self.search_games(name)
 
         results = search_data.get("results", [])
 
         if not results:
             return None
-        
+
         game_id = results[0].get("id")
 
         if game_id is None:
@@ -71,11 +56,12 @@ class RawgApiClient:
 
         return game_data.get("description_raw")
 
+
 async def main():
     client = RawgApiClient()
 
     try:
-        description = await client.get_game_description_by_name("witcher 2")
+        description = await client.get_game_description_by_name("witcher 3")
 
         if description is None:
             print("Game not found")
@@ -86,7 +72,8 @@ async def main():
         print("HTTP error:", error.response.status_code, error.response.text)
 
     except httpx.RequestError as error:
-        print("Connection error:", error)    
+        print("Connection error:", error)
+
 
 #     except RuntimeError as error:
 #         print("Runtime error:", error)

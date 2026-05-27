@@ -1,12 +1,14 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name = "app"
-    debug = True
+    app_name: str = "app"
+    debug: bool = True
 
-    class Config:
-        env_file = ".env"
+    rawg_api_key: str
+    rawg_base_url: str
+
+    model_config = SettingsConfigDict(env_file=".env")
 
 
 settings = Settings()
