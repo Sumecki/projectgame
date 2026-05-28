@@ -16,6 +16,7 @@ class RawgApiClient:
 
     async def _make_request(
         self,
+        method: str,
         path: str,
         params: dict[str, Any] | None = None,
         timeout: float = 10.0,
@@ -29,15 +30,26 @@ class RawgApiClient:
             base_url=self.base_url,
             timeout=timeout,
         ) as client:
-            response = await client.get(path, params=request_params)
+            response = await client.request(
+                method=method, 
+                url=path, 
+                params=request_params
+            )
             response.raise_for_status()
             return response.json()
 
     async def search_games(self, name: str) -> dict[str, Any]:
-        return await self._make_request("/games", params={"search": name})
+        return await self._make_request(
+            method="GET", 
+            path="/games", 
+            params={"search": name},
+            )
 
     async def get_game(self, game_id: int | str) -> dict[str, Any]:
-        return await self._make_request(f"/games/{game_id}")
+        return await self._make_request(
+            method="GET",
+            path=f"/games/{game_id}",
+            )
 
     async def get_game_description_by_name(self, name: str) -> str | None:
         search_data = await self.search_games(name)
@@ -55,29 +67,3 @@ class RawgApiClient:
         game_data = await self.get_game(game_id)
 
         return game_data.get("description_raw")
-
-
-async def main():
-    client = RawgApiClient()
-
-    try:
-        description = await client.get_game_description_by_name("witcher 3")
-
-        if description is None:
-            print("Game not found")
-        else:
-            print(description)
-
-    except httpx.HTTPStatusError as error:
-        print("HTTP error:", error.response.status_code, error.response.text)
-
-    except httpx.RequestError as error:
-        print("Connection error:", error)
-
-
-#     except RuntimeError as error:
-#         print("Runtime error:", error)
-
-
-if __name__ == "__main__":
-    asyncio.run(main())
