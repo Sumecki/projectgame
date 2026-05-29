@@ -49,7 +49,11 @@ class RawgApiClient:
         )
 
     async def get_game_description_by_name(self, name: str) -> str | None:
-        search_data = await self.search_games(name)
+        search_data = await self._make_request(
+            method="GET",
+            path="/games",
+            params={"search": name},
+        )
 
         results = search_data.get("results", [])
 
@@ -61,6 +65,9 @@ class RawgApiClient:
         if game_id is None:
             return None
 
-        game_data = await self.get_game(game_id)
+        game_data = await self._make_request(
+            method="GET",
+            path=f"/games/{game_id}",
+        )
 
         return game_data.get("description_raw")
