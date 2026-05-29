@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any
 
 import httpx
@@ -31,25 +30,23 @@ class RawgApiClient:
             timeout=timeout,
         ) as client:
             response = await client.request(
-                method=method, 
-                url=path, 
-                params=request_params
+                method=method, url=path, params=request_params
             )
             response.raise_for_status()
             return response.json()
 
     async def search_games(self, name: str) -> dict[str, Any]:
         return await self._make_request(
-            method="GET", 
-            path="/games", 
+            method="GET",
+            path="/games",
             params={"search": name},
-            )
+        )
 
     async def get_game(self, game_id: int | str) -> dict[str, Any]:
         return await self._make_request(
             method="GET",
             path=f"/games/{game_id}",
-            )
+        )
 
     async def get_game_description_by_name(self, name: str) -> str | None:
         search_data = await self.search_games(name)
