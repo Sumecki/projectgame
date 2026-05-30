@@ -11,7 +11,9 @@ def rawg_client():
 
 
 @pytest.mark.parametrize(
-    "search_response", [{"results": []}, {"results": [{"name": "Witcher"}]}]
+    "search_response",
+    [{"results": []}, {"results": [{"name": "Witcher"}]}],
+    ids=["empty_results", "missing_game_id"],
 )
 @pytest.mark.asyncio
 async def test_get_game_description_by_name_returns_none(
@@ -58,3 +60,14 @@ async def test_search_games_calls_make_request_with_correct_arguments(rawg_clien
     rawg_client._make_request.assert_awaited_once_with(
         method="GET", path="/games", params={"search": "counter strike"}
     )
+
+
+@pytest.mark.asyncio
+async def test_get_game_calls_make_request_with_correct_arguments(rawg_client):
+    rawg_client._make_request = AsyncMock(return_value={"results": []})
+
+    result = await rawg_client.get_game(222)
+
+    assert result == {"results": []}
+
+    rawg_client._make_request.assert_awaited_once_with(method="GET", path="/games/222")
