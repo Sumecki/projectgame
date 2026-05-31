@@ -2,72 +2,72 @@ from unittest.mock import AsyncMock
 
 import pytest
 
-from app.services.rawg_client import RawgApiClient
 
-
-@pytest.fixture
-def rawg_client():
-    return RawgApiClient()
-
-
-@pytest.mark.parametrize(
-    "search_response",
-    [{"results": []}, {"results": [{"name": "Witcher"}]}],
-    ids=["empty_results", "missing_game_id"],
-)
-@pytest.mark.asyncio
-async def test_get_game_description_by_name_returns_none(
-    rawg_client,
-    search_response,
-):
-    rawg_client._make_request = AsyncMock(return_value=search_response)
-
-    result = await rawg_client.get_game_description_by_name("witcher")
-    assert result is None
-
-
-@pytest.mark.asyncio
-async def test_get_game_description_by_name_returns_description(rawg_client):
-    rawg_client._make_request = AsyncMock(
-        side_effect=[
-            {"results": [{"id": 123}]},
-            {"description_raw": "Game description"},
-        ]
+class TestRawgApiClient:
+    @pytest.mark.parametrize(
+        "search_response",
+        [{"results": []}, {"results": [{"name": "Witcher"}]}],
+        ids=["empty_results", "missing_game_id"],
     )
+    @pytest.mark.asyncio
+    async def test_get_game_description_by_name_returns_none(
+        self,
+        rawg_client,
+        search_response,
+    ):
+        rawg_client._make_request = AsyncMock(return_value=search_response)
 
-    result = await rawg_client.get_game_description_by_name("Resident Evil")
-    assert result == "Game description"
+        result = await rawg_client.get_game_description_by_name("witcher")
+        assert result is None
 
+    @pytest.mark.asyncio
+    async def test_get_game_description_by_name_returns_description(self, rawg_client):
+        rawg_client._make_request = AsyncMock(
+            side_effect=[
+                {"results": [{"id": 123}]},
+                {"description_raw": "Game description"},
+            ]
+        )
 
-@pytest.mark.asyncio
-async def test_get_game_description_by_name_returns_none_when_description_missing(
-    rawg_client,
-):
-    rawg_client._make_request = AsyncMock(side_effect=[{"results": [{"id": 321}]}, {}])
+        result = await rawg_client.get_game_description_by_name("Resident Evil")
+        assert result == "Game description"
 
-    result = await rawg_client.get_game_description_by_name("Diablo")
-    assert result is None
+    @pytest.mark.asyncio
+    async def test_get_game_description_by_name_returns_none_when_description_missing(
+        self,
+        rawg_client,
+    ):
+        rawg_client._make_request = AsyncMock(
+            side_effect=[{"results": [{"id": 321}]}, {}]
+        )
 
+        result = await rawg_client.get_game_description_by_name("Diablo")
+        assert result is None
 
-@pytest.mark.asyncio
-async def test_search_games_calls_make_request_with_correct_arguments(rawg_client):
-    rawg_client._make_request = AsyncMock(return_value={"results": []})
+    @pytest.mark.asyncio
+    async def test_search_games_calls_make_request_with_correct_arguments(
+        self, rawg_client
+    ):
+        rawg_client._make_request = AsyncMock(return_value={"results": []})
 
-    result = await rawg_client.search_games("counter strike")
+        result = await rawg_client.search_games("counter strike")
 
-    assert result == {"results": []}
+        assert result == {"results": []}
 
-    rawg_client._make_request.assert_awaited_once_with(
-        method="GET", path="/games", params={"search": "counter strike"}
-    )
+        rawg_client._make_request.assert_awaited_once_with(
+            method="GET", path="/games", params={"search": "counter strike"}
+        )
 
+    @pytest.mark.asyncio
+    async def test_get_game_calls_make_request_with_correct_arguments(
+        self, rawg_client
+    ):
+        rawg_client._make_request = AsyncMock(return_value={"results": []})
 
-@pytest.mark.asyncio
-async def test_get_game_calls_make_request_with_correct_arguments(rawg_client):
-    rawg_client._make_request = AsyncMock(return_value={"results": []})
+        result = await rawg_client.get_game(222)
 
-    result = await rawg_client.get_game(222)
+        assert result == {"results": []}
 
-    assert result == {"results": []}
-
-    rawg_client._make_request.assert_awaited_once_with(method="GET", path="/games/222")
+        rawg_client._make_request.assert_awaited_once_with(
+            method="GET", path="/games/222"
+        )
