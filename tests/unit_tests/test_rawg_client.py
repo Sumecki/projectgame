@@ -71,3 +71,8 @@ class TestRawgApiClient:
         rawg_client._make_request.assert_awaited_once_with(
             method="GET", path="/games/222"
         )
+
+    async def test_build_auth_params_returns_api_key(self, rawg_client):
+        result = rawg_client._build_auth_params()
+
+        assert result == {"key": rawg_client.api_key}
