@@ -2,7 +2,9 @@ from typing import Any
 
 import httpx
 
-from app.core.config import settings
+from app.core.config import get_settings
+
+settings = get_settings()
 
 
 class RawgApiClient:
