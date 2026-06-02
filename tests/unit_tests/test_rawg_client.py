@@ -134,9 +134,9 @@ class TestRawgApiClient:
                 "search": "witcher",
             },
         )
-    
+
     @pytest.mark.asyncio
-    async def test_get_first_game_by_name_return_first_game(self, rawg_client):
+    async def test_get_first_game_by_name_returns_first_game(self, rawg_client):
         rawg_client._make_request = AsyncMock(
             return_value={
                 "results": [
@@ -147,32 +147,69 @@ class TestRawgApiClient:
         )
 
         result = await rawg_client._get_first_game_by_name("game")
-        
+
         assert result == {"id": 1, "name": "Game one"}
+        rawg_client._make_request.assert_awaited_once_with(
+            method="GET",
+            path="/games",
+            params={"search": "game"},
+        )
 
     @pytest.mark.asyncio
-    async def test_get_first_game_by_name_returns_none_when_results_empty(self, rawg_client):
-        rawg_client._make_request = AsyncMock(
-            return_value={"results": []}
-        )
-        
+    async def test_get_first_game_by_name_returns_none_when_results_empty(
+        self, rawg_client
+    ):
+        rawg_client._make_request = AsyncMock(return_value={"results": []})
+
         result = await rawg_client._get_first_game_by_name("game")
         assert result is None
+        rawg_client._make_request.assert_awaited_once_with(
+            method="GET",
+            path="/games",
+            params={"search": "game"},
+        )
 
     @pytest.mark.asyncio
     async def test_get_game_name_by_name_returns_game_name(self, rawg_client):
         rawg_client._make_request = AsyncMock(
-            return_value={"results":[{"name": "Witcher 3"}]}
+            return_value={"results": [{"name": "Witcher 3"}]}
         )
         result = await rawg_client.get_game_name_by_name("witcher 3")
-
         assert result == "Witcher 3"
 
     @pytest.mark.asyncio
-    async def test_get_game_name_by_name_returns_none(self, rawg_client):
-        rawg_client._make_request = AsyncMock(
-            return_value={"results":[]}
-        )
+    async def test_get_game_name_by_name_returns_none_when_results_empty(
+        self, rawg_client
+    ):
+        rawg_client._make_request = AsyncMock(return_value={"results": []})
         result = await rawg_client.get_game_name_by_name("witcher 3")
+
+        assert result is None
+
+    @pytest.mark.asyncio
+    async def test_get_game_genres_by_name_returns_genres(self, rawg_client):
+        rawg_client._make_request = AsyncMock(
+            return_value={
+                "results": [
+                    {
+                        "genres": [
+                            {"name": "Action"},
+                            {"name": "RPG"},
+                        ]
+                    }
+                ]
+            }
+        )
+
+        result = await rawg_client.get_game_genres_by_name("witcher 3")
+        assert result == ["Action", "RPG"]
+
+    @pytest.mark.asyncio
+    async def test_get_game_genres_by_name_returns_none_when_results_empty(
+        self, rawg_client
+    ):
+        rawg_client._make_request = AsyncMock(return_value={"results": []})
+
+        result = await rawg_client.get_game_genres_by_name("witcher 3")
 
         assert result is None
