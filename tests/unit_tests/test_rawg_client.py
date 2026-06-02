@@ -134,3 +134,26 @@ class TestRawgApiClient:
                 "search": "witcher",
             },
         )
+    @pytest.mark.asyncio
+    async def test_get_first_game_by_name_return_first_game(self, rawg_client):
+        rawg_client._make_request = AsyncMock(
+            return_value={
+                "results": [
+                    {"id": 1, "name": "Game one"},
+                    {"id": 2, "name": "Game two"},
+                ]
+            }
+        )
+
+        result = await rawg_client._get_first_game_by_name("game")
+        
+        assert result == {"id": 1, "name": "Game one"}
+
+    @pytest.mark.asyncio
+    async def test_get_first_game_by_name_returns_none_when_results_empty(self, rawg_client):
+        rawg_client._make_request = AsyncMock(
+            return_value={"results": []}
+        )
+        
+        result = await rawg_client._get_first_game_by_name("game")
+        assert result is None
