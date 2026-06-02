@@ -37,6 +37,20 @@ class RawgApiClient:
             response.raise_for_status()
             return response.json()
 
+    async def _get_first_game_by_name(self, name: str) -> dict[str, Any] | None:
+        response = await self._make_request(
+            method="GET",
+            path="/games",
+            params={"search": name},
+        )
+
+        games = response.get("results", [])
+
+        if not games:
+            return None
+
+        return games[0]
+
     async def search_games(self, name: str) -> dict[str, Any]:
         return await self._make_request(
             method="GET",
@@ -51,18 +65,12 @@ class RawgApiClient:
         )
 
     async def get_game_description_by_name(self, name: str) -> str | None:
-        search_data = await self._make_request(
-            method="GET",
-            path="/games",
-            params={"search": name},
-        )
+        game = await self._get_first_game_by_name(name)
 
-        results = search_data.get("results", [])
-
-        if not results:
+        if not game:
             return None
 
-        game_id = results[0].get("id")
+        game_id = game.get("id")
 
         if game_id is None:
             return None
@@ -73,3 +81,19 @@ class RawgApiClient:
         )
 
         return game_data.get("description_raw")
+
+    async def get_game_name_by_name(self, name: str) -> str | None:
+        game = await self._get_first_game_by_name(name)
+
+        if not game:
+            return None
+
+        return game.get("name")
+
+    async def get_game_genres_by_name(self, name: str) -> list[str] | None:
+        game = await self._get_first_game_by_name(name)
+
+        if not game:
+            return None
+
+        return [genre["name"] for genre in game.get("genres", [])]
