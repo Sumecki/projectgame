@@ -37,20 +37,6 @@ class RawgApiClient:
             response.raise_for_status()
             return response.json()
 
-    async def _get_first_game_by_name(self, name: str) -> dict[str, Any] | None:
-        response = await self._make_request(
-            method="GET",
-            path="/games",
-            params={"search": name},
-        )
-
-        games = response.get("results", [])
-
-        if not games:
-            return None
-
-        return games[0]
-
     async def search_games(self, name: str) -> dict[str, Any]:
         return await self._make_request(
             method="GET",
@@ -65,35 +51,36 @@ class RawgApiClient:
         )
 
     async def get_game_description_by_name(self, name: str) -> str | None:
-        game = await self._get_first_game_by_name(name)
+        search_data = await self.search_games(name)
 
-        if not game:
+        games = search_data.get("results", [])
+
+        if not games:
             return None
 
-        game_id = game.get("id")
+        first_game = games[0]
+
+        game_id = first_game.get("id")
 
         if game_id is None:
             return None
 
-        game_data = await self._make_request(
-            method="GET",
-            path=f"/games/{game_id}",
-        )
+        game_data = await self.get_game(game_id)
 
-        return game_data.get("description_raw")
+        description = game_data.get("description_raw")
+
+        return description
 
     async def get_game_name_by_name(self, name: str) -> str | None:
-        game = await self._get_first_game_by_name(name)
+        search_data = await self.search_games(name)
+        games = search_data.get("results", [])
 
-        if not game:
-            return None
-
-        return game.get("name")
+        return games[0].get("name") if games else None
 
     async def get_game_genres_by_name(self, name: str) -> list[str] | None:
-        game = await self._get_first_game_by_name(name)
+        search_data = await self.search_games(name)
+        games = search_data.get("results", [])
 
-        if not game:
-            return None
-
-        return [genre["name"] for genre in game.get("genres", [])]
+        return (
+            [genre["name"] for genre in games[0].get("genres", [])] if games else None
+        )
