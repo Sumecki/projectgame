@@ -1,12 +1,21 @@
-from pydantic_settings import BaseSettings
+from functools import lru_cache
+
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
-    app_name = "app"
-    debug = True
+    app_name: str = "app"
+    debug: bool = True
 
-    class Config:
-        env_file = ".env"
+    rawg_api_key: str
+    rawg_base_url: str
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
 
-settings = Settings()
+@lru_cache
+def get_settings() -> Settings:
+    return Settings()
