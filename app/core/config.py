@@ -9,6 +9,8 @@ class Settings(BaseSettings):
 
     rawg_api_key: str
     rawg_base_url: str
+    database_url: str
+
 
     model_config = SettingsConfigDict(
         env_file=".env",

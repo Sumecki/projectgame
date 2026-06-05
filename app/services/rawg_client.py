@@ -83,6 +83,8 @@ class RawgApiClient:
         search_data = await self.search_games(name)
         games = search_data.get("results", [])
 
-        game_genre = [genre["name"] for genre in games[0].get("genres", [])] if games else None
+        game_genre = (
+            [genre["name"] for genre in games[0].get("genres", [])] if games else None
+        )
         
         return game_genre

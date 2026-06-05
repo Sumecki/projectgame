@@ -24,6 +24,7 @@ services:
 
     volumes: 
       - .:/code
+      - /code/.venv
 
   postgres-db:
     image: postgres:16
