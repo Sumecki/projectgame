@@ -7,6 +7,7 @@ from alembic import context
 
 from app.core.base import Base
 from app.models.game import Game  # noqa: F401
+from app.models.users import User # noqa: F401
 
 
 # this is the Alembic Config object, which provides
