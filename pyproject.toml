@@ -25,6 +25,11 @@ dev = [
 [tool.ruff]
 line-length = 88
 target-version = "py312"
+exclude = [
+    "alembic/",
+    "alembic.ini",
+    "tests/"
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "I"]
