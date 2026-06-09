@@ -24,5 +24,5 @@ async def log_request(request: Request, call_next):
         response.status_code,
         process_time_ms,
     )
-    
+
     return response

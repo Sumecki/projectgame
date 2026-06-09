@@ -86,5 +86,5 @@ class RawgApiClient:
         game_genre = (
             [genre["name"] for genre in games[0].get("genres", [])] if games else None
         )
-        
+
         return game_genre
