@@ -1,6 +1,6 @@
 import pytest
 
-from app.services.rawg_client import RawgApiClient
+from app.core.services.rawg_client import RawgApiClient
 
 
 @pytest.fixture
