@@ -86,7 +86,7 @@ class TestRawgApiClient:
         mock_client = AsyncMock()
         mock_client.request.return_value = mock_response
 
-        with patch("app.services.rawg_client.httpx.AsyncClient") as mock_async_client:
+        with patch("app.core.services.rawg_client.httpx.AsyncClient") as mock_async_client:
             mock_async_client.return_value.__aenter__.return_value = mock_client
 
             result = await rawg_client._make_request(
@@ -117,7 +117,7 @@ class TestRawgApiClient:
         mock_client = AsyncMock()
         mock_client.request.return_value = mock_response
 
-        with patch("app.services.rawg_client.httpx.AsyncClient") as mock_async_client:
+        with patch("app.core.services.rawg_client.httpx.AsyncClient") as mock_async_client:
             mock_async_client.return_value.__aenter__.return_value = mock_client
 
             await rawg_client._make_request(
