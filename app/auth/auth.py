@@ -1,8 +1,22 @@
-from fastapi import APIRouter
+from datetime import UTC, datetime, timedelta
 
-router = APIRouter()
+import jwt
+
+from app.config import get_settings
+
+settings = get_settings()
 
 
-@router.get("/auth/")
-async def get_user():
-    return {"user": "authenticated"}
+def create_access_token(user_email: str) -> tuple[str, float]:
+    expire = datetime.now(UTC) + timedelta(
+        minutes=settings.access_token_expire_minutes,
+    )
+
+    payload = {
+        "sub": user_email,
+        "exp": expire,
+    }
+
+    token = jwt.encode(payload, settings.jwt_secret_key, algorithm=settings.algorithm)
+
+    return token, expire.timestamp()
