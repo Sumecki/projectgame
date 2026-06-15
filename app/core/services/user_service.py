@@ -8,9 +8,6 @@ class UserService:
     def __init__(self, user_repository: UserRepository):
         self.user_repository = user_repository
 
-    def get_user_by_email(self, email: str) -> User | None:
-        return self.user_repository.get_user_by_email(email)
-
     def register_user(self, user_data: UserCreate) -> User:
         if self.user_repository.get_user_by_email(str(user_data.email)):
             raise ValueError("Email already exists")
@@ -23,9 +20,6 @@ class UserService:
             hashed_password=hash_password(user_data.password),
         )
         return self.user_repository.create_user(user)
-
-    def get_user_by_id(self, user_id: int) -> User | None:
-        return self.user_repository.get_user_by_id(user_id)
 
     def authenticate_user(self, login_data: UserLogin) -> User:
         user = self.user_repository.get_user_by_email(str(login_data.email))
