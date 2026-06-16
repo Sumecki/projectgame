@@ -1,6 +1,8 @@
 import pytest
 
+from app.auth.security import verify_password
 from app.core.domain.schemas.user import UserCreate
+from app.core.exceptions import UserAlreadyExistsError
 from app.core.services.user_service import UserService
 
 
@@ -33,3 +35,63 @@ def test_register_user_creates_user():
 
     assert user.username == "John"
     assert user.email == "jdoe@google.com"
+
+
+def test_register_user_hashes_password():
+    repository = InMemoryUserRepository()
+    service = UserService(repository)
+
+    user_data = UserCreate(
+        username="John",
+        email="jdoe@google.com",
+        password="SecretPassword!",
+    )
+
+    user = service.register_user(user_data)
+
+    assert user.hashed_password != user_data.password
+    assert verify_password(user_data.password, user.hashed_password) is True
+
+
+def test_register_user_raises_error_when_email_exists():
+    repository = InMemoryUserRepository()
+    service = UserService(repository)
+
+    service.register_user(
+        UserCreate(
+            username="John",
+            email="jdoe@google.com",
+            password="SecretPassword!",
+        )
+    )
+
+    with pytest.raises(UserAlreadyExistsError):
+        service.register_user(
+            UserCreate(
+                username="other",
+                email="jdoe@google.com",
+                password="SecretPassword!",
+            )
+        )
+
+
+def test_register_user_raises_error_when_username_exists():
+    repository = InMemoryUserRepository()
+    service = UserService(repository)
+
+    service.register_user(
+        UserCreate(
+            username="John",
+            email="jdoe@google.com",
+            password="SecretPassword!",
+        )
+    )
+
+    with pytest.raises(UserAlreadyExistsError):
+        service.register_user(
+        UserCreate(
+            username="John",
+            email="other@google.com",
+            password="SecretPassword!",
+        )
+    )
