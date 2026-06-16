@@ -1,8 +1,8 @@
 import pytest
 
 from app.auth.security import verify_password
-from app.core.domain.schemas.user import UserCreate
-from app.core.exceptions import UserAlreadyExistsError
+from app.core.domain.schemas.user import UserCreate, UserLogin
+from app.core.exceptions import UserAlreadyExistsError, InvalidCredentialsError
 from app.core.services.user_service import UserService
 
 
@@ -89,9 +89,63 @@ def test_register_user_raises_error_when_username_exists():
 
     with pytest.raises(UserAlreadyExistsError):
         service.register_user(
+            UserCreate(
+                username="John",
+                email="other@google.com",
+                password="SecretPassword!",
+            )
+        )
+
+def test_authenticate_user_raises_error_when_email_not_found():
+    repository = InMemoryUserRepository()
+    service = UserService(repository)
+
+    login_data = UserLogin(
+        email="jdoe@google.com",
+        password="SecretPassword!",
+    )
+
+    with pytest.raises(InvalidCredentialsError):
+        service.authenticate_user(login_data)
+
+def test_authenticate_user_raises_error_when_password_is_invalid():
+    repository = InMemoryUserRepository()
+    service = UserService(repository)
+
+    service.register_user(
         UserCreate(
             username="John",
-            email="other@google.com",
+            email="jdoe@google.com",
             password="SecretPassword!",
         )
     )
+
+    login_data = UserLogin(
+        email="jdoe@google.com",
+        password="InvalidPassword",
+    )
+
+    with pytest.raises(InvalidCredentialsError):
+        service.authenticate_user(login_data)
+
+def test_authenticate_user_returns_user_when_credentials_are_valid():
+    repository = InMemoryUserRepository()
+    service = UserService(repository)
+
+    user = service.register_user(
+        UserCreate(
+            username="John",
+            email="jdoe@google.com",
+            password="SecretPassword!",
+        )
+    )
+
+    login_data = UserLogin(
+        email="jdoe@google.com",
+        password="SecretPassword!",
+    )
+
+    authenticated_user = service.authenticate_user(login_data)
+
+    assert user.email == authenticated_user.email
+    assert user.username == authenticated_user.username
