@@ -1,151 +1,153 @@
+from unittest.mock import MagicMock
+
 import pytest
 
-from app.auth.security import verify_password
+from app.auth.security import hash_password, verify_password
+from app.core.domain.models.user import User
 from app.core.domain.schemas.user import UserCreate, UserLogin
-from app.core.exceptions import UserAlreadyExistsError, InvalidCredentialsError
+from app.core.exceptions import InvalidCredentialsError, UserAlreadyExistsError
+from app.core.repository.user_repository import UserRepository
 from app.core.services.user_service import UserService
 
 
-class InMemoryUserRepository:
-    def __init__(self):
-        self.users = []
+class TestUserService:
+    USERNAME = "John"
+    EMAIL = "jdoe@gmail.com"
+    PASSWORD = "SecretPassword!"
+    WRONG_PASSWORD = "InvalidPassword"
 
-    def get_user_by_email(self, email: str):
-        return next((user for user in self.users if user.email == email), None)
-    
-    def get_user_by_username(self, username: str):
-        return next((user for user in self.users if user.username == username), None)
-    
-    def create_user(self, user):
-        self.users.append(user)
-        return user
-    
+    def setup_method(self):
+        self.repository = MagicMock(spec=UserRepository)
+        self.service = UserService(self.repository)
 
-def test_register_user_creates_user():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
+    def test_register_user_creates_user(self):
+        self.repository.get_user_by_email.return_value = None
+        self.repository.get_user_by_username.return_value = None
+        self.repository.create_user.side_effect = lambda user: user
 
-    user_data = UserCreate(
-        username="John",
-        email="jdoe@google.com",
-        password="SecretPassword!",
-    )
-
-    user = service.register_user(user_data)
-
-    assert user.username == "John"
-    assert user.email == "jdoe@google.com"
-
-
-def test_register_user_hashes_password():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
-
-    user_data = UserCreate(
-        username="John",
-        email="jdoe@google.com",
-        password="SecretPassword!",
-    )
-
-    user = service.register_user(user_data)
-
-    assert user.hashed_password != user_data.password
-    assert verify_password(user_data.password, user.hashed_password) is True
-
-
-def test_register_user_raises_error_when_email_exists():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
-
-    service.register_user(
-        UserCreate(
-            username="John",
-            email="jdoe@google.com",
-            password="SecretPassword!",
-        )
-    )
-
-    with pytest.raises(UserAlreadyExistsError):
-        service.register_user(
-            UserCreate(
-                username="other",
-                email="jdoe@google.com",
-                password="SecretPassword!",
-            )
+        user_data = UserCreate(
+            username=self.USERNAME,
+            email=self.EMAIL,
+            password=self.PASSWORD,
         )
 
+        created_user = self.service.register_user(user_data)
 
-def test_register_user_raises_error_when_username_exists():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
+        assert created_user.username == self.USERNAME
+        assert created_user.email == self.EMAIL
+        self.repository.get_user_by_email.assert_called_once_with(self.EMAIL)
+        self.repository.get_user_by_username.assert_called_once_with(self.USERNAME)
+        self.repository.create_user.assert_called_once()
 
-    service.register_user(
-        UserCreate(
-            username="John",
-            email="jdoe@google.com",
-            password="SecretPassword!",
-        )
-    )
+    def test_register_user_hashes_password(self):
+        self.repository.get_user_by_email.return_value = None
+        self.repository.get_user_by_username.return_value = None
+        self.repository.create_user.side_effect = lambda user: user
 
-    with pytest.raises(UserAlreadyExistsError):
-        service.register_user(
-            UserCreate(
-                username="John",
-                email="other@google.com",
-                password="SecretPassword!",
-            )
+        user_data = UserCreate(
+            username=self.USERNAME,
+            email=self.EMAIL,
+            password=self.PASSWORD,
         )
 
-def test_authenticate_user_raises_error_when_email_not_found():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
+        created_user = self.service.register_user(user_data)
 
-    login_data = UserLogin(
-        email="jdoe@google.com",
-        password="SecretPassword!",
-    )
+        assert created_user.hashed_password != self.PASSWORD
+        assert verify_password(self.PASSWORD, created_user.hashed_password) is True
 
-    with pytest.raises(InvalidCredentialsError):
-        service.authenticate_user(login_data)
-
-def test_authenticate_user_raises_error_when_password_is_invalid():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
-
-    service.register_user(
-        UserCreate(
-            username="John",
-            email="jdoe@google.com",
-            password="SecretPassword!",
+    def test_register_user_raises_error_when_email_exists(self):
+        existing_user = User(
+            username=self.USERNAME,
+            email=self.EMAIL,
+            hashed_password=hash_password(self.PASSWORD),
         )
-    )
 
-    login_data = UserLogin(
-        email="jdoe@google.com",
-        password="InvalidPassword",
-    )
+        self.repository.get_user_by_email.return_value = existing_user
 
-    with pytest.raises(InvalidCredentialsError):
-        service.authenticate_user(login_data)
-
-def test_authenticate_user_returns_user_when_credentials_are_valid():
-    repository = InMemoryUserRepository()
-    service = UserService(repository)
-
-    user = service.register_user(
-        UserCreate(
-            username="John",
-            email="jdoe@google.com",
-            password="SecretPassword!",
+        user_data = UserCreate(
+            username="other",
+            email=self.EMAIL,
+            password=self.PASSWORD,
         )
-    )
 
-    login_data = UserLogin(
-        email="jdoe@google.com",
-        password="SecretPassword!",
-    )
+        with pytest.raises(UserAlreadyExistsError):
+            self.service.register_user(user_data)
 
-    authenticated_user = service.authenticate_user(login_data)
+        self.repository.get_user_by_email.assert_called_once_with(self.EMAIL)
+        self.repository.get_user_by_username.assert_not_called()
+        self.repository.create_user.assert_not_called()
 
-    assert user.email == authenticated_user.email
-    assert user.username == authenticated_user.username
+    def test_register_user_raises_error_when_username_exists(self):
+        existing_user = User(
+            username=self.USERNAME,
+            email=self.EMAIL,
+            hashed_password=hash_password(self.PASSWORD),
+        )
+
+        self.repository.get_user_by_email.return_value = None
+        self.repository.get_user_by_username.return_value = existing_user
+
+        user_data = UserCreate(
+            username=self.USERNAME,
+            email="other@google.com",
+            password=self.PASSWORD,
+        )
+
+        with pytest.raises(UserAlreadyExistsError):
+            self.service.register_user(user_data)
+
+        self.repository.get_user_by_email.assert_called_once_with("other@google.com")
+        self.repository.get_user_by_username.assert_called_once_with(self.USERNAME)
+        self.repository.create_user.assert_not_called()
+
+    def test_authenticate_user_raises_error_when_email_not_found(self):
+        self.repository.get_user_by_email.return_value = None
+
+        login_data = UserLogin(
+            email=self.EMAIL,
+            password=self.PASSWORD,
+        )
+
+        with pytest.raises(InvalidCredentialsError):
+            self.service.authenticate_user(login_data)
+
+        self.repository.get_user_by_email.assert_called_once_with(self.EMAIL)
+
+    def test_authenticate_user_raises_error_when_password_is_invalid(self):
+        user = User(
+            username=self.USERNAME,
+            email=self.EMAIL,
+            hashed_password=hash_password(self.PASSWORD),
+        )
+
+        self.repository.get_user_by_email.return_value = user
+
+        login_data = UserLogin(
+            email=self.EMAIL,
+            password=self.WRONG_PASSWORD,
+        )
+
+        with pytest.raises(InvalidCredentialsError):
+            self.service.authenticate_user(login_data)
+
+        self.repository.get_user_by_email.assert_called_once_with(self.EMAIL)
+
+    def test_authenticate_user_returns_user_when_credentials_are_valid(self):
+        user = User(
+            username=self.USERNAME,
+            email=self.EMAIL,
+            hashed_password=hash_password(self.PASSWORD),
+        )
+
+        self.repository.get_user_by_email.return_value = user
+
+        login_data = UserLogin(
+            email=self.EMAIL,
+            password=self.PASSWORD,
+        )
+
+        authenticated_user = self.service.authenticate_user(login_data)
+
+        assert authenticated_user.email == user.email
+        assert authenticated_user.username == user.username
+        self.repository.get_user_by_email.assert_called_once_with(self.EMAIL)
