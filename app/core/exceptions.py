@@ -4,3 +4,7 @@ class UserAlreadyExistsError(Exception):
 
 class InvalidCredentialsError(Exception):
     pass
+
+
+class TokenValidationError(Exception):
+    pass

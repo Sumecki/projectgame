@@ -2,13 +2,14 @@ from datetime import UTC, datetime, timedelta
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordBearer
 from jwt import InvalidTokenError
 from pydantic import ValidationError
 
 from app.config import get_settings
 from app.core.domain.schemas.auth import TokenPayload
+from app.core.exceptions import TokenValidationError
 
 settings = get_settings()
 
@@ -41,10 +42,6 @@ async def get_current_user(
         token_data = TokenPayload(**payload)
 
     except (InvalidTokenError, ValidationError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Could not validate credentials",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
+        raise TokenValidationError("Could not validate credentials") from exc
 
     return token_data
