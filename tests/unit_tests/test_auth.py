@@ -45,42 +45,41 @@ class TestAuth:
         assert token_payload.sub == self.EMAIL
         assert token_payload.exp > 0
 
-    @pytest.mark.asyncio
-    async def test_get_current_user_raises_error_for_invalid_token(self):
-        invalid_token = "invalid-token"
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "token",
+    [
+        pytest.param(
+            "invalid-token",
+            id="invalid-token",
+        ),
+        pytest.param(
+            jwt.encode(
+                {
+                    "exp": datetime.now(UTC) + timedelta(minutes=15),
+                },
+                settings.jwt_secret_key,
+                algorithm=settings.algorithm,
+            ),
+            id="missing-subject",
+        ),
+        pytest.param(
+            jwt.encode(
+                {
+                    "sub": "jdoe@gmail.com",
+                    "exp": datetime.now(UTC) - timedelta(minutes=1),
+                },
+                settings.jwt_secret_key,
+                algorithm=settings.algorithm,
+            ),
+            id="expired-token",
+        ),
+    ],
+)
+async def test_get_current_user_raises_error_for_invalid_token(
+    token: str,
+):
+    with pytest.raises(TokenValidationError) as exc_info:
+        await get_current_user(token)
 
-        with pytest.raises(TokenValidationError) as exc_info:
-            await get_current_user(invalid_token)
-
-        assert str(exc_info.value) == "Could not validate credentials"
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_raises_error_for_invalid_payload(self):
-        token_without_subject = jwt.encode(
-            {
-                "exp": datetime.now(UTC) + timedelta(minutes=15),
-            },
-            settings.jwt_secret_key,
-            algorithm=settings.algorithm,
-        )
-
-        with pytest.raises(TokenValidationError) as exc_info:
-            await get_current_user(token_without_subject)
-
-        assert str(exc_info.value) == "Could not validate credentials"
-
-    @pytest.mark.asyncio
-    async def test_get_current_user_raises_error_for_expired_token(self):
-        expired_token = jwt.encode(
-            {
-                "sub": self.EMAIL,
-                "exp": datetime.now(UTC) - timedelta(minutes=1),
-            },
-            settings.jwt_secret_key,
-            algorithm=settings.algorithm,
-        )
-
-        with pytest.raises(TokenValidationError) as exc_info:
-            await get_current_user(expired_token)
-
-        assert str(exc_info.value) == "Could not validate credentials"
+    assert str(exc_info.value) == "Could not validate credentials"
