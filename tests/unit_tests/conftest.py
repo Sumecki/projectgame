@@ -1,4 +1,4 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -27,3 +27,17 @@ def existing_user() -> User:
         email = "jdoe@gmail.com",
         hashed_password = "hashed-password",
     )
+
+@pytest.fixture
+def auth_setting_mock() -> Mock:
+    setting_mock = Mock()
+    setting_mock.jwt_secret_key = "test-secret-key-for-jwt-authentication"
+    setting_mock.algorithm = "HS256"
+    setting_mock.access_token_expire_minutes = 60
+
+    return setting_mock
+
+@pytest.fixture
+def patched_auth_settings(auth_setting_mock: Mock):
+    with patch ("app.auth.auth.settings", auth_setting_mock):
+        yield auth_setting_mock
