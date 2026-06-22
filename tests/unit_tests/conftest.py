@@ -1,5 +1,7 @@
+from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
+import jwt
 import pytest
 
 from app.core.domain.models.user import User
@@ -29,15 +31,40 @@ def existing_user() -> User:
     )
 
 @pytest.fixture
-def auth_setting_mock() -> Mock:
-    setting_mock = Mock()
-    setting_mock.jwt_secret_key = "test-secret-key-for-jwt-authentication"
-    setting_mock.algorithm = "HS256"
-    setting_mock.access_token_expire_minutes = 60
+def auth_settings_mock() -> Mock:
+    settings_mock = Mock()
+    settings_mock.jwt_secret_key = "test-secret-key-for-jwt-authentication"
+    settings_mock.algorithm = "HS256"
+    settings_mock.access_token_expire_minutes = 60
 
-    return setting_mock
+    return settings_mock
 
 @pytest.fixture
-def patched_auth_settings(auth_setting_mock: Mock):
-    with patch ("app.auth.auth.settings", auth_setting_mock):
-        yield auth_setting_mock
+def patched_auth_settings(auth_settings_mock: Mock):
+    with patch ("app.auth.auth.settings", auth_settings_mock):
+        yield auth_settings_mock
+
+@pytest.fixture
+def invalid_token() -> str:
+    return "invalid-token"
+
+@pytest.fixture
+def token_without_subject(patched_auth_settings: Mock) -> str:
+    return jwt.encode(
+        {
+            "exp": datetime.now(UTC) + timedelta(minutes=15),
+        },
+        patched_auth_settings.jwt_secret_key,
+        algorithm=patched_auth_settings.algorithm,
+    )
+
+@pytest.fixture
+def expired_token(patched_auth_settings: Mock) -> str:
+    return jwt.encode(
+        {
+            "sub": "jdoe@gmail.com",
+            "exp": datetime.now(UTC) - timedelta(minutes=1),
+        },
+        patched_auth_settings.jwt_secret_key,
+        algorithm=patched_auth_settings.algorithm,
+    )
