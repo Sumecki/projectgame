@@ -25,4 +25,4 @@ def register_user(
     user_repository = UserRepository(db)
     user_service = UserService(user_repository)
 
-    return user_service(user_data)
+    return user_service.register_user(user_data)
