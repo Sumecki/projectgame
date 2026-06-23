@@ -32,3 +32,6 @@ class UserService:
             raise InvalidCredentialsError("Invalid email or password")
 
         return user
+
+    def get_user_by_email(self, email: str) -> User | None:
+        return self.user_repository.get_user_by_email(str(email))
