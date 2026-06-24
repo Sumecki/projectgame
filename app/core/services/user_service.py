@@ -34,4 +34,4 @@ class UserService:
         return user
 
     def get_user_by_email(self, email: str) -> User | None:
-        return self.user_repository.get_user_by_email(str(email))
+        return self.user_repository.get_user_by_email(email)

@@ -41,7 +41,7 @@ def login_user(
     user_service = UserService(user_repository)
 
     user = user_service.authenticate_user(login_data)
-    access_token, access_token_expire = create_access_token(str(user.email))
+    access_token, access_token_expire = create_access_token(user.email)
 
     return Token(
         access_token=access_token,
@@ -53,7 +53,7 @@ def login_user(
     "/users/me",
     response_model=UserResponse,
 )
-def get_user_me(
+def get_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ) -> User:
     return current_user
