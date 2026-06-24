@@ -68,3 +68,19 @@ def expired_token(patched_auth_settings: Mock) -> str:
         patched_auth_settings.jwt_secret_key,
         algorithm=patched_auth_settings.algorithm,
     )
+
+@pytest.fixture
+def current_user_dependencies():
+    db = Mock()
+
+    with patch("app.auth.auth.UserRepository") as user_repository_class_mock:
+        with patch("app.auth.auth.UserService") as user_service_class_mock:
+            user_service_instance_mock = user_service_class_mock.return_value
+            
+
+            yield (
+                db,
+                user_repository_class_mock,
+                user_service_class_mock,
+                user_service_instance_mock,
+            )
