@@ -45,6 +45,7 @@ def login_user(
 
     return Token(
         access_token=access_token,
+        token_type="bearer",
         access_token_expire=access_token_expire,
     )
 
