@@ -1,26 +1,33 @@
+from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import jwt
 import pytest
+from fastapi.testclient import TestClient
 
+from app.core.db.database import get_db
 from app.core.domain.models.user import User
 from app.core.repository.user_repository import UserRepository
 from app.core.services.rawg_client import RawgApiClient
 from app.core.services.user_service import UserService
+from app.main import app
 
 
 @pytest.fixture
 def rawg_client() -> RawgApiClient:
     return RawgApiClient()
 
+
 @pytest.fixture
 def user_repository_mock() -> Mock:
     return Mock(spec=UserRepository)
 
+
 @pytest.fixture
 def user_service(user_repository_mock: Mock) -> UserService:
     return UserService(user_repository_mock)
+
 
 @pytest.fixture
 def existing_user() -> User:
@@ -29,6 +36,7 @@ def existing_user() -> User:
         email = "jdoe@gmail.com",
         hashed_password = "hashed-password",
     )
+
 
 @pytest.fixture
 def auth_settings_mock() -> Mock:
@@ -39,14 +47,17 @@ def auth_settings_mock() -> Mock:
 
     return settings_mock
 
+
 @pytest.fixture
 def patched_auth_settings(auth_settings_mock: Mock):
     with patch ("app.auth.auth.settings", auth_settings_mock):
         yield auth_settings_mock
 
+
 @pytest.fixture
 def invalid_token() -> str:
     return "invalid-token"
+
 
 @pytest.fixture
 def token_without_subject(patched_auth_settings: Mock) -> str:
@@ -58,6 +69,7 @@ def token_without_subject(patched_auth_settings: Mock) -> str:
         algorithm=patched_auth_settings.algorithm,
     )
 
+
 @pytest.fixture
 def expired_token(patched_auth_settings: Mock) -> str:
     return jwt.encode(
@@ -68,6 +80,7 @@ def expired_token(patched_auth_settings: Mock) -> str:
         patched_auth_settings.jwt_secret_key,
         algorithm=patched_auth_settings.algorithm,
     )
+
 
 @pytest.fixture
 def current_user_dependencies():
@@ -84,3 +97,21 @@ def current_user_dependencies():
                 user_service_class_mock,
                 user_service_instance_mock,
             )
+
+
+@pytest.fixture
+def db_mock() -> Mock:
+    return Mock()
+
+
+@pytest.fixture
+def client(db_mock: Mock) -> Generator[TestClient, None, None]:
+    def override_get_db():
+        yield db_mock
+
+    app.dependency_overrides[get_db] = override_get_db
+
+    with TestClient(app) as test_client:
+        yield test_client
+
+    app.dependency_overrides.clear()
