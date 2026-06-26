@@ -11,15 +11,10 @@ from app.core.domain.schemas.user import UserCreate, UserLogin, UserResponse
 from app.core.repository.user_repository import UserRepository
 from app.core.services.user_service import UserService
 
-router = APIRouter()
+user_router = APIRouter()
 
 
-@router.get("/health")
-async def health_check():
-    return {"health": "ok"}
-
-
-@router.post(
+@user_router.post(
     "/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED
 )
 def register_user(
@@ -32,7 +27,7 @@ def register_user(
     return user_service.register_user(user_data)
 
 
-@router.post("/login", response_model=Token)
+@user_router.post("/login", response_model=Token)
 def login_user(
     login_data: UserLogin,
     db: Session = Depends(get_db),
@@ -50,7 +45,7 @@ def login_user(
     )
 
 
-@router.get(
+@user_router.get(
     "/users/me",
     response_model=UserResponse,
 )
