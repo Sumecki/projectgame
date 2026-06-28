@@ -1,17 +1,13 @@
-from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from unittest.mock import Mock, patch
 
 import jwt
 import pytest
-from fastapi.testclient import TestClient
 
-from app.core.db.database import get_db
 from app.core.domain.models.user import User
 from app.core.repository.user_repository import UserRepository
 from app.core.services.rawg_client import RawgApiClient
 from app.core.services.user_service import UserService
-from app.main import app
 
 
 @pytest.fixture
@@ -32,9 +28,9 @@ def user_service(user_repository_mock: Mock) -> UserService:
 @pytest.fixture
 def existing_user() -> User:
     return User(
-        username = "John",
-        email = "jdoe@gmail.com",
-        hashed_password = "hashed-password",
+        username="John",
+        email="jdoe@gmail.com",
+        hashed_password="hashed-password",
     )
 
 
@@ -50,7 +46,7 @@ def auth_settings_mock() -> Mock:
 
 @pytest.fixture
 def patched_auth_settings(auth_settings_mock: Mock):
-    with patch ("app.auth.auth.settings", auth_settings_mock):
+    with patch("app.auth.auth.settings", auth_settings_mock):
         yield auth_settings_mock
 
 
@@ -97,21 +93,3 @@ def current_user_dependencies():
                 user_service_class_mock,
                 user_service_instance_mock,
             )
-
-
-@pytest.fixture
-def db_mock() -> Mock:
-    return Mock()
-
-
-@pytest.fixture
-def client(db_mock: Mock) -> Generator[TestClient, None, None]:
-    def override_get_db():
-        yield db_mock
-
-    app.dependency_overrides[get_db] = override_get_db
-
-    with TestClient(app) as test_client:
-        yield test_client
-
-    app.dependency_overrides.clear()
