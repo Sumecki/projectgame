@@ -39,3 +39,71 @@ class TestRegisterEndpoint:
         assert user.hashed_password != register_payload["password"]
         assert verify_password(register_payload["password"], user.hashed_password)
         
+    def test_register_user_returns_conflict_when_email_exists(
+            self,
+            client: TestClient,
+            register_payload: dict[str, str],
+    ):
+        first_response = client.post(
+            "/register",
+            json=register_payload,
+        )
+
+        assert first_response.status_code == status.HTTP_201_CREATED
+
+        duplicate_username_payload = {
+            "username": "Other",
+            "email": register_payload["email"],
+            "password": "OtherPassword!"
+        }
+
+        second_response = client.post(
+            "/register",
+            json=duplicate_username_payload
+        )
+
+        assert second_response.status_code == status.HTTP_409_CONFLICT
+        assert second_response.json() == {"detail": "Email already exists"}
+
+    def test_register_user_returns_conflict_when_username_exists(
+            self,
+            client: TestClient,
+            register_payload: dict[str, str],
+    ):
+        first_response = client.post(
+            "/register",
+            json=register_payload,
+        )
+
+        assert first_response.status_code == status.HTTP_201_CREATED
+
+        duplicate_username_payload = {
+            "username": register_payload["username"],
+            "email": "other@gmail.com",
+            "password": "OtherPassword!"
+        }
+
+        second_response = client.post(
+            "/register",
+            json=duplicate_username_payload,
+        )
+
+        assert second_response.status_code == status.HTTP_409_CONFLICT
+        assert second_response.json() == {"detail": "Username already exists"}
+        
+    def test_register_returns_validation_error_for_invalid_email(
+            self,
+            client: TestClient,
+            register_payload: dict[str, str],
+    ):
+        invalid_email_payload = {
+            **register_payload,
+            "email": "invalid-email",
+        }
+
+        response = client.post(
+            "/register",
+            json=invalid_email_payload
+        )
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
