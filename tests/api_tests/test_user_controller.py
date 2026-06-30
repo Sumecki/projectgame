@@ -1,3 +1,5 @@
+import uuid
+
 import pytest
 from fastapi import status
 from fastapi.testclient import TestClient
@@ -23,6 +25,7 @@ class TestRegisterEndpoint:
         assert response_data["username"] == register_payload["username"]
         assert response_data["email"] == register_payload["email"]
         assert "id" in response_data
+        uuid.UUID(response_data["id"])
         assert "password" not in response_data
         assert "hashed_password" not in response_data
 
@@ -172,3 +175,72 @@ class TestLoginEndpoint:
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+class TestUsersMeEndpoint:
+    def test_get_user_returns_current_user(
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
+    ):
+        register_response = client.post("/register", json=register_payload)
+
+        assert register_response.status_code == status.HTTP_201_CREATED
+
+        registered_user_id = register_response.json()["id"]
+
+        login_response = client.post(
+            "/login",
+            json={
+                "email": register_payload["email"],
+                "password": register_payload["password"],
+            },
+        )
+
+        assert login_response.status_code == status.HTTP_200_OK
+
+        access_token = login_response.json()["access_token"]
+
+        response = client.get(
+            "/users/me",
+            headers={
+                "Authorization": f"Bearer {access_token}",
+            },
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+
+        response_data = response.json()
+
+        assert response_data["username"] == register_payload["username"]
+        assert response_data["email"] == register_payload["email"]
+        assert response_data["id"] == registered_user_id
+        uuid.UUID(response_data["id"])
+        assert "password" not in response_data
+        assert "hashed_password" not in response_data
+
+    @pytest.mark.parametrize(
+        "headers, expected_detail",
+        [
+            pytest.param(
+                {},
+                "Not authenticated",
+                id="missing-token",
+            ),
+            pytest.param(
+                {"Authorization": "Bearer invalid-token"},
+                "Could not validate credentials",
+                id="invalid-token",
+            ),
+        ],
+    )
+    def test_get_user_returns_unauthorized_when_token_is_missing_or_invalid(
+        self,
+        client: TestClient,
+        headers: dict[str, str],
+        expected_detail: str,
+    ):
+        response = client.get("/users/me", headers=headers)
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.json() == {"detail": expected_detail}
