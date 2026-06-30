@@ -15,7 +15,7 @@ class TestRegisterEndpoint:
     ):
         response = client.post(
             "/register",
-            json=register_payload
+            json=register_payload,
         )
 
         assert response.status_code == status.HTTP_201_CREATED
@@ -40,9 +40,9 @@ class TestRegisterEndpoint:
         assert verify_password(register_payload["password"], user.hashed_password)
         
     def test_register_user_returns_conflict_when_email_exists(
-            self,
-            client: TestClient,
-            register_payload: dict[str, str],
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
     ):
         first_response = client.post(
             "/register",
@@ -51,24 +51,24 @@ class TestRegisterEndpoint:
 
         assert first_response.status_code == status.HTTP_201_CREATED
 
-        duplicate_username_payload = {
+        duplicate_email_payload = {
             "username": "Other",
             "email": register_payload["email"],
-            "password": "OtherPassword!"
+            "password": "OtherPassword!",
         }
 
         second_response = client.post(
             "/register",
-            json=duplicate_username_payload
+            json=duplicate_email_payload,
         )
 
         assert second_response.status_code == status.HTTP_409_CONFLICT
         assert second_response.json() == {"detail": "Email already exists"}
 
     def test_register_user_returns_conflict_when_username_exists(
-            self,
-            client: TestClient,
-            register_payload: dict[str, str],
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
     ):
         first_response = client.post(
             "/register",
@@ -80,7 +80,7 @@ class TestRegisterEndpoint:
         duplicate_username_payload = {
             "username": register_payload["username"],
             "email": "other@gmail.com",
-            "password": "OtherPassword!"
+            "password": "OtherPassword!",
         }
 
         second_response = client.post(
@@ -92,9 +92,9 @@ class TestRegisterEndpoint:
         assert second_response.json() == {"detail": "Username already exists"}
         
     def test_register_returns_validation_error_for_invalid_email(
-            self,
-            client: TestClient,
-            register_payload: dict[str, str],
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
     ):
         invalid_email_payload = {
             **register_payload,
@@ -103,7 +103,74 @@ class TestRegisterEndpoint:
 
         response = client.post(
             "/register",
-            json=invalid_email_payload
+            json=invalid_email_payload,
         )
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+
+
+class TestLoginEndpoint:
+    def test_login_returns_access_token(
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
+    ):
+        register_response = client.post("/register", json=register_payload)
+
+        assert register_response.status_code == status.HTTP_201_CREATED
+
+        login_response = client.post(
+            "/login",
+            json={
+                "email": register_payload["email"],
+                "password": register_payload["password"],
+            },
+        )
+
+        assert login_response.status_code == status.HTTP_200_OK
+
+        login_response_data = login_response.json()
+
+        assert isinstance(login_response_data["access_token"], str)
+        assert login_response_data["token_type"] == "bearer"
+        assert isinstance(login_response_data["access_token_expire"], float)
+
+    def test_login_returns_unauthorized_for_invalid_password(
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
+    ):
+        register_response = client.post("/register", json=register_payload)
+
+        assert register_response.status_code == status.HTTP_201_CREATED
+
+        login_response = client.post(
+            "/login",
+            json={
+                "email": register_payload["email"],
+                "password": "WrongPassword",
+            },
+        )
+
+        assert login_response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert login_response.json() == {"detail": "Invalid email or password"}
+
+    def test_login_returns_unauthorized_for_invalid_email(
+        self,
+        client: TestClient,
+        register_payload: dict[str, str],
+    ):
+        register_response = client.post("/register", json=register_payload)
+
+        assert register_response.status_code == status.HTTP_201_CREATED
+
+        login_response = client.post(
+            "/login",
+            json={
+                "email": "other@gmail.com",
+                "password": register_payload["password"],
+            },
+        )
+
+        assert login_response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert login_response.json() == {"detail": "Invalid email or password"}
