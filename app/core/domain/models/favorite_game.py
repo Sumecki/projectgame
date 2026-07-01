@@ -34,7 +34,7 @@ class FavoriteGame(Base):
         ForeignKey("games.id", ondelete="CASCADE"),
         nullable=False,
     )
-    created_at: Mapped[DateTime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default_factory=lambda: datetime.now(UTC),
         init=False,

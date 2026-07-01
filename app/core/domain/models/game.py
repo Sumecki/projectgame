@@ -13,6 +13,7 @@ class Game(Base):
         UUID(as_uuid=True),
         primary_key=True,
         default_factory=uuid.uuid4,
+        init=False,
     )
     name: Mapped[str] = mapped_column()
 
