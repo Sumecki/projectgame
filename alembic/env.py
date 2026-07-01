@@ -8,6 +8,7 @@ from alembic import context
 from app.core.db.base import Base
 from app.core.domain.models.game import Game  # noqa: F401
 from app.core.domain.models.user import User  # noqa: F401
+from app.core.domain.models.favorite_game import FavoriteGame # noqa: F401
 
 
 # this is the Alembic Config object, which provides
