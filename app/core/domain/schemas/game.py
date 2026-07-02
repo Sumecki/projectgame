@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 
 class GameResponse(BaseModel):
@@ -8,5 +8,6 @@ class GameResponse(BaseModel):
     rawg_id: int
     name: str
     description: str | None = None
+    genres: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
