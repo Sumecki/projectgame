@@ -1,10 +1,10 @@
-import uuid
+from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict
 
 
 class GameResponse(BaseModel):
-    id: uuid.UUID
+    id: UUID
     rawg_id: int
     name: str
     description: str | None = None

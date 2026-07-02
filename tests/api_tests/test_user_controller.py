@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 
 import pytest
 from fastapi import status
@@ -25,7 +25,7 @@ class TestRegisterEndpoint:
         assert response_data["username"] == register_payload["username"]
         assert response_data["email"] == register_payload["email"]
         assert "id" in response_data
-        uuid.UUID(response_data["id"])
+        UUID(response_data["id"])
         assert "password" not in response_data
         assert "hashed_password" not in response_data
 
@@ -215,7 +215,7 @@ class TestUsersMeEndpoint:
         assert response_data["username"] == register_payload["username"]
         assert response_data["email"] == register_payload["email"]
         assert response_data["id"] == registered_user_id
-        uuid.UUID(response_data["id"])
+        UUID(response_data["id"])
         assert "password" not in response_data
         assert "hashed_password" not in response_data
 

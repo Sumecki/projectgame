@@ -1,4 +1,4 @@
-import uuid
+from uuid import UUID
 
 from sqlalchemy.orm import Session
 
@@ -19,7 +19,7 @@ class UserRepository:
 
         return user
 
-    def get_user_by_id(self, user_id: uuid.UUID) -> User | None:
+    def get_user_by_id(self, user_id: UUID) -> User | None:
         return self.session.query(User).filter(User.id == user_id).first()
 
     def get_user_by_username(self, username: str) -> User | None:

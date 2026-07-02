@@ -1,6 +1,6 @@
-import uuid
+from uuid import UUID, uuid4
 
-from sqlalchemy import UUID
+from sqlalchemy import UUID as sqlUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.base import Base
@@ -9,10 +9,10 @@ from app.core.db.base import Base
 class Game(Base):
     __tablename__ = "games"
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[UUID] = mapped_column(
+        sqlUUID(as_uuid=True),
         primary_key=True,
-        default_factory=uuid.uuid4,
+        default_factory=uuid4,
         init=False,
     )
     name: Mapped[str] = mapped_column()

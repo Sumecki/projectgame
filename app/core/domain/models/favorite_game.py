@@ -1,7 +1,8 @@
-import uuid
 from datetime import UTC, datetime
+from uuid import UUID, uuid4
 
-from sqlalchemy import UUID, DateTime, ForeignKey, UniqueConstraint
+from sqlalchemy import UUID as sqlUUID
+from sqlalchemy import DateTime, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.db.base import Base
@@ -18,19 +19,19 @@ class FavoriteGame(Base):
         ),
     )
 
-    id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    id: Mapped[UUID] = mapped_column(
+        sqlUUID(as_uuid=True),
         primary_key=True,
-        default_factory=uuid.uuid4,
+        default_factory=uuid4,
         init=False,
     )
-    user_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    user_id: Mapped[UUID] = mapped_column(
+        sqlUUID(as_uuid=True),
         ForeignKey("users.id", ondelete="CASCADE"),
         nullable=False,
     )
-    game_id: Mapped[uuid.UUID] = mapped_column(
-        UUID(as_uuid=True),
+    game_id: Mapped[UUID] = mapped_column(
+        sqlUUID(as_uuid=True),
         ForeignKey("games.id", ondelete="CASCADE"),
         nullable=False,
     )
