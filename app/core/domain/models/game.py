@@ -1,5 +1,6 @@
 from uuid import UUID, uuid4
 
+from sqlalchemy import JSON
 from sqlalchemy import UUID as sqlUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -21,8 +22,8 @@ class Game(Base):
 
     description: Mapped[str | None] = mapped_column(nullable=True)
 
-    # genres: Mapped[list[str]] = mapped_column(
-    #     JSON,
-    #     nullable=False,
-    #     default_factory=list,
-    # )
+    genres: Mapped[list[str]] = mapped_column(
+        JSON,
+        nullable=False,
+        default_factory=list,
+    )
