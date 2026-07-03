@@ -8,3 +8,11 @@ class InvalidCredentialsError(Exception):
 
 class TokenValidationError(Exception):
     pass
+
+
+class GameNotFoundError(Exception):
+    pass
+
+
+class InvalidRawgResponseError(Exception):
+    pass

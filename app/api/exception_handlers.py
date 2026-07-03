@@ -2,7 +2,9 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
+    GameNotFoundError,
     InvalidCredentialsError,
+    InvalidRawgResponseError,
     TokenValidationError,
     UserAlreadyExistsError,
 )
@@ -36,4 +38,22 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(GameNotFoundError)
+    async def game_not_found_handler(
+        _request: Request,
+        exc: GameNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(InvalidRawgResponseError)
+    async def invalid_rawg_response_handler(
+        _request: Request,
+        exc: InvalidRawgResponseError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY, content={"detail": str(exc)}
         )
