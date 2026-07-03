@@ -20,7 +20,7 @@ class Game(Base):
 
     rawg_id: Mapped[int] = mapped_column(unique=True)
 
-    description: Mapped[str | None] = mapped_column(nullable=True)
+    description: Mapped[str | None] = mapped_column(nullable=True, default=None)
 
     genres: Mapped[list[str]] = mapped_column(
         JSON,
