@@ -104,21 +104,25 @@ def mocks_for_game_service():
     rawg_client_mock.search_games = AsyncMock()
     rawg_client_mock.get_game = AsyncMock()
 
+    return game_repository_mock, rawg_client_mock
+
+@pytest.fixture
+def game_service(mocks_for_game_service):
+    game_repository_mock, rawg_client_mock = mocks_for_game_service
+    
     game_service = GameService(
         game_repository=game_repository_mock,
         rawg_client=rawg_client_mock,
     )
-    return game_service, game_repository_mock, rawg_client_mock
+    return game_service
 
 @pytest.fixture
-def rawg_client_get_game_filled_response():
-    game_data = {
-        "id": 3328,
-        "name": "The Witcher 3",
-        "description_raw": "Open world RPG.",
-        "genres": [
-            {"name": "RPG"},
-            {"name": "Adventure"},
-        ],
+def rawg_search_games_response():
+    return {
+        "results": [
+            {
+                "id": 3328,
+                "name": "The Witcher 3",
+            }
+        ]
     }
-    return game_data
