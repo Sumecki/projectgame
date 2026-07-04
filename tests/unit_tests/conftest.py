@@ -1,11 +1,13 @@
 from datetime import UTC, datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import jwt
 import pytest
 
 from app.core.domain.models.user import User
+from app.core.repository.game_repository import GameRepository
 from app.core.repository.user_repository import UserRepository
+from app.core.services.game_service import GameService
 from app.core.services.rawg_client import RawgApiClient
 from app.core.services.user_service import UserService
 
@@ -93,3 +95,30 @@ def current_user_dependencies():
                 user_service_class_mock,
                 user_service_instance_mock,
             )
+
+@pytest.fixture
+def mocks_for_game_service():
+    game_repository_mock = Mock(spec=GameRepository)
+    rawg_client_mock = Mock(spec=RawgApiClient)
+
+    rawg_client_mock.search_games = AsyncMock()
+    rawg_client_mock.get_game = AsyncMock()
+
+    game_service = GameService(
+        game_repository=game_repository_mock,
+        rawg_client=rawg_client_mock,
+    )
+    return game_service, game_repository_mock, rawg_client_mock
+
+@pytest.fixture
+def rawg_client_get_game_filled_response():
+    game_data = {
+        "id": 3328,
+        "name": "The Witcher 3",
+        "description_raw": "Open world RPG.",
+        "genres": [
+            {"name": "RPG"},
+            {"name": "Adventure"},
+        ],
+    }
+    return game_data
