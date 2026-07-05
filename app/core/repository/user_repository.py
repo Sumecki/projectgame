@@ -6,7 +6,7 @@ from app.core.domain.models.user import User
 
 
 class UserRepository:
-    def __init__(self, session: Session):
+    def __init__(self, session: Session) -> None:
         self.session = session
 
     def get_user_by_email(self, email: str) -> User | None:

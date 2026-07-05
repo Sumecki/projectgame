@@ -44,7 +44,7 @@ class TestGameService:
         assert game.genres == ["RPG", "Adventure"]
 
     @pytest.mark.parametrize(
-        "game_data_params",
+        "missing_id_or_name_params",
         [
             pytest.param(
                 {
@@ -63,10 +63,10 @@ class TestGameService:
     def test_build_game_from_rawg_data_raises_error_when_id_or_name_is_missing(
         self,
         game_service,
-        game_data_params,
+        missing_id_or_name_params,
     ):
         with pytest.raises(InvalidRawgResponseError):
-            game_service._build_game_from_rawg_data(game_data_params)
+            game_service._build_game_from_rawg_data(missing_id_or_name_params)
 
     @pytest.mark.asyncio
     async def test_get_or_create_game_by_name_creates_game_in_db(
