@@ -5,11 +5,13 @@ import jwt
 import pytest
 
 from app.core.domain.models.user import User
+from app.core.repository.favorite_game_repository import FavoriteGameRepository
 from app.core.repository.game_repository import GameRepository
 from app.core.repository.user_repository import UserRepository
 from app.core.services.game_service import GameService
 from app.core.services.rawg_client import RawgApiClient
 from app.core.services.user_service import UserService
+from app.core.services.favorite_game_service import FavoriteGameService
 
 
 @pytest.fixture
@@ -126,3 +128,12 @@ def rawg_search_games_response():
             }
         ]
     }
+
+@pytest.fixture
+def favorite_game_repository_mock() -> Mock:
+    return Mock(spec=FavoriteGameRepository)
+
+
+@pytest.fixture
+def favorite_game_service(favorite_game_repository_mock: Mock) -> FavoriteGameService:
+    return FavoriteGameService(favorite_game_repository_mock)
