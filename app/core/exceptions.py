@@ -16,3 +16,11 @@ class GameNotFoundError(Exception):
 
 class InvalidRawgResponseError(Exception):
     pass
+
+
+class FavoriteGameDuplicateError(Exception):
+    pass
+
+
+class FavoriteGameNotFoundError(Exception):
+    pass

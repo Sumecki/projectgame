@@ -2,6 +2,8 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
+    FavoriteGameDuplicateError,
+    FavoriteGameNotFoundError,
     GameNotFoundError,
     InvalidCredentialsError,
     InvalidRawgResponseError,
@@ -56,4 +58,22 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_502_BAD_GATEWAY, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(FavoriteGameDuplicateError)
+    async def favorite_game_duplicate_handler(
+        _request: Request,
+        exc: FavoriteGameDuplicateError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(FavoriteGameNotFoundError)
+    async def favorite_game_not_found_handler(
+        _request: Request,
+        exc: FavoriteGameNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)}
         )
