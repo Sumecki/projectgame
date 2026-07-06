@@ -44,7 +44,7 @@ class FavoriteGameService:
 
         self.favorite_game_repository.delete_favorite_game(favorite_game)
 
-    def get_user_favorite_games_list(self, user_id: UUID) -> list[FavoriteGame]:
+    def get_user_favorite_games(self, user_id: UUID) -> list[FavoriteGame]:
         return self.favorite_game_repository.get_favorite_games_by_user_id(
             user_id=user_id,
         )

@@ -124,7 +124,7 @@ class TestFavoriteGameService:
             favorite_games
         )
 
-        result = favorite_game_service.get_user_favorite_games_list(self.USER_ID)
+        result = favorite_game_service.get_user_favorite_games(self.USER_ID)
 
         assert result is favorite_games
 
