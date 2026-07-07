@@ -37,17 +37,17 @@ class RawgApiClient:
             response.raise_for_status()
             return response.json()
 
-    async def search_games(self, name: str) -> dict[str, Any]:
+    async def search_games(self, query: str, page_size: int = 10) -> dict[str, Any]:
         return await self._make_request(
             method="GET",
             path="/games",
-            params={"search": name},
+            params={"search": query, "page_size": page_size},
         )
 
-    async def get_game(self, game_id: int | str) -> dict[str, Any]:
+    async def get_game(self, rawg_id: int) -> dict[str, Any]:
         return await self._make_request(
             method="GET",
-            path=f"/games/{game_id}",
+            path=f"/games/{rawg_id}",
         )
 
     async def get_game_description_by_name(self, name: str) -> str | None:

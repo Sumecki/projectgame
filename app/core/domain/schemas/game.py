@@ -11,3 +11,9 @@ class GameResponse(BaseModel):
     genres: list[str] = Field(default_factory=list)
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class GameSearchResult(BaseModel):
+    rawg_id: int
+    name: str
+    released: str | None = None

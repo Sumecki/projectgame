@@ -55,7 +55,7 @@ class TestRawgApiClient:
         assert result == {"results": []}
 
         rawg_client._make_request.assert_awaited_once_with(
-            method="GET", path="/games", params={"search": "counter strike"}
+            method="GET", path="/games", params={"search": "counter strike", "page_size": 10}
         )
 
     @pytest.mark.asyncio
