@@ -125,7 +125,13 @@ def rawg_search_games_response():
             {
                 "id": 3328,
                 "name": "The Witcher 3",
-            }
+                "released": "2015-05-18",
+            },
+            {
+                "id": 2095,
+                "name": "The Witcher 2: Assassins of Kings",
+                "released": "2011-05-17",
+            },
         ]
     }
 
