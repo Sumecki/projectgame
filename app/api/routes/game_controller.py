@@ -13,26 +13,19 @@ from app.core.services.rawg_client import RawgApiClient
 game_router = APIRouter()
 
 
-def get_game_service(
-    db: Annotated[Session, Depends(get_db)],
-) -> GameService:
-    game_repository = GameRepository(db)
-    rawg_client = RawgApiClient()
-
-    return GameService(
-        game_repository=game_repository,
-        rawg_client=rawg_client,
-    )
-
-
 @game_router.get(
     "/search",
     response_model=list[GameSearchResult],
 )
 async def search_games(
-    query: Annotated[str, Query(min_length=2)],
-    game_service: Annotated[GameService, Depends(get_game_service)],
+    query: Annotated[str, Query(min_length=2)], db: Session = Depends(get_db)
 ) -> list[GameSearchResult]:
+    game_repository = GameRepository(db)
+    rawg_client = RawgApiClient()
+    game_service = GameService(
+        game_repository=game_repository,
+        rawg_client=rawg_client,
+    )
     return await game_service.search_games_from_rawg(query=query)
 
 
@@ -42,6 +35,12 @@ async def search_games(
 )
 async def get_game_details(
     rawg_id: int,
-    game_service: Annotated[GameService, Depends(get_game_service)],
+    db: Session = Depends(get_db),
 ) -> Game:
+    game_repository = GameRepository(db)
+    rawg_client = RawgApiClient()
+    game_service = GameService(
+        game_repository=game_repository,
+        rawg_client=rawg_client,
+    )
     return await game_service.get_or_create_game_by_rawg_id(rawg_id)
