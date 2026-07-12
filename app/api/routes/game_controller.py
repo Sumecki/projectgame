@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app.core.db.database import get_db
+from app.core.domain.models.game import Game
 from app.core.domain.schemas.game import GameResponse, GameSearchResult
 from app.core.repository.game_repository import GameRepository
 from app.core.services.game_service import GameService
@@ -42,5 +43,5 @@ async def search_games(
 async def get_game_details(
     rawg_id: int,
     game_service: Annotated[GameService, Depends(get_game_service)],
-) -> GameResponse:
-    return game_service.get_or_create_game_by_rawg_id(rawg_id)
+) -> Game:
+    return await game_service.get_or_create_game_by_rawg_id(rawg_id)
