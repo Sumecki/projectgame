@@ -14,6 +14,8 @@ from app.main import app
 from app.core.services.rawg_client import RawgApiClient
 
 from app.core.domain.models.user import User
+from app.core.domain.models.game import Game
+from app.core.domain.models.favorite_game import FavoriteGame
 
 
 ROOT_DATABASE_URL = "postgresql+psycopg2://user:password@localhost:5432/postgres"
@@ -123,4 +125,22 @@ def rawg_search_mock():
         }
 
         yield search_mock
-        
+
+@pytest.fixture
+def rawg_get_game_mock():
+    with patch.object(
+        RawgApiClient,
+        "get_game",
+        new_callable=AsyncMock,
+    ) as get_game_mock:
+        get_game_mock.return_value = {
+            "id": 3328,
+            "name": "The Witcher 3",
+            "description_raw": "Open world RPG.",
+            "genres": [
+                {"name": "RPG"},
+                {"name": "Adventure"},
+            ],
+        }
+
+        yield get_game_mock
