@@ -6,10 +6,12 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session, sessionmaker
+from unittest.mock import AsyncMock, patch
 
 from app.core.db.base import Base
 from app.core.db.database import get_db
 from app.main import app
+from app.core.services.rawg_client import RawgApiClient
 
 from app.core.domain.models.user import User
 
@@ -102,3 +104,23 @@ def register_payload() -> dict[str, str]:
         "email": "jdoe@gmail.com",
         "password": "SecretPassword!",
     }
+
+@pytest.fixture
+def rawg_search_mock():
+    with patch.object(
+        RawgApiClient,
+        "search_games",
+        new_callable=AsyncMock,
+    ) as search_mock:
+        search_mock.return_value = {
+            "results": [
+                {
+                    "id": 3328,
+                    "name": "The Witcher 3",
+                    "released": "2015-05-18",
+                }
+            ]
+        }
+
+        yield search_mock
+        
