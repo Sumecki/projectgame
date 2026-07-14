@@ -1,6 +1,6 @@
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.db.database import get_db
@@ -18,7 +18,8 @@ game_router = APIRouter()
     response_model=list[GameSearchResult],
 )
 async def search_games(
-    query: Annotated[str, Query(min_length=2)], db: Session = Depends(get_db)
+    query: Annotated[str, Query(min_length=2)],
+    db: Session = Depends(get_db),
 ) -> list[GameSearchResult]:
     game_repository = GameRepository(db)
     rawg_client = RawgApiClient()
@@ -33,7 +34,7 @@ async def search_games(
     "/rawg/{rawg_id}",
     response_model=GameResponse,
 )
-async def get_game_details(
+def get_game_details(
     rawg_id: int,
     db: Session = Depends(get_db),
 ) -> Game:
@@ -43,4 +44,22 @@ async def get_game_details(
         game_repository=game_repository,
         rawg_client=rawg_client,
     )
-    return await game_service.get_or_create_game_by_rawg_id(rawg_id)
+    return game_service.get_game_by_rawg_id(rawg_id)
+
+
+@game_router.post(
+    "/rawg/{rawg_id}",
+    response_model=GameResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+async def create_game_from_rawg(
+    rawg_id: int,
+    db: Session = Depends(get_db),
+) -> Game:
+    game_repository = GameRepository(db)
+    rawg_client = RawgApiClient()
+    game_service = GameService(
+        game_repository=game_repository,
+        rawg_client=rawg_client,
+    )
+    return await game_service.create_game_from_rawg(rawg_id)

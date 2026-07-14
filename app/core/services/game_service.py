@@ -2,7 +2,11 @@ from typing import Any
 
 from app.core.domain.models.game import Game
 from app.core.domain.schemas.game import GameSearchResult
-from app.core.exceptions import InvalidRawgResponseError
+from app.core.exceptions import (
+    GameAlreadyExistsError,
+    GameNotFoundError,
+    InvalidRawgResponseError,
+)
 from app.core.repository.game_repository import GameRepository
 from app.core.services.rawg_client import RawgApiClient
 
@@ -45,11 +49,19 @@ class GameService:
             for game in games
         ]
 
-    async def get_or_create_game_by_rawg_id(self, rawg_id: int) -> Game:
+    def get_game_by_rawg_id(self, rawg_id: int) -> Game:
         game = self.game_repository.get_game_by_rawg_id(rawg_id)
 
-        if game:
-            return game
+        if game is None:
+            raise GameNotFoundError("Game not found")
+
+        return game
+
+    async def create_game_from_rawg(self, rawg_id: int) -> Game:
+        existing_game = self.game_repository.get_game_by_rawg_id(rawg_id)
+
+        if existing_game is not None:
+            raise GameAlreadyExistsError("Game already exists")
 
         game_data = await self.rawg_client.get_game(rawg_id)
         game = self._build_game_from_rawg_data(game_data)

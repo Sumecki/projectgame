@@ -91,26 +91,16 @@ class TestGetGameDetails:
 
     def test_get_game_details_returns_existing_game_from_db(
         self,
-        db_session: Session,
         client: TestClient,
         rawg_get_game_mock: AsyncMock,
+        game_in_db: Game,
     ):
-        game = Game(
-            rawg_id=self.RAWG_ID,
-            name=self.GAME_NAME,
-            description=self.DESCRIPTION,
-            genres=self.GENRES,
-        )
 
-        db_session.add(game)
-        db_session.commit()
-        db_session.refresh(game)
-
-        response = client.get(f"/rawg/{self.RAWG_ID}")
+        response = client.get(f"/rawg/{game_in_db.rawg_id}")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
-            "id": str(game.id),
+            "id": str(game_in_db.id),
             "rawg_id": self.RAWG_ID,
             "name": self.GAME_NAME,
             "description": self.DESCRIPTION,

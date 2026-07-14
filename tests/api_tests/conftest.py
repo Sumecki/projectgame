@@ -8,6 +8,8 @@ from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session, sessionmaker
 from unittest.mock import AsyncMock, patch
 
+from app.auth.auth import get_current_user
+from app.auth.security import hash_password
 from app.core.db.base import Base
 from app.core.db.database import get_db
 from app.main import app
@@ -144,3 +146,46 @@ def rawg_get_game_mock():
         }
 
         yield get_game_mock
+
+@pytest.fixture
+def game_in_db(db_session: Session) -> Game:
+    game = Game(
+        rawg_id=3328,
+        name="The Witcher 3",
+        description="Open world RPG.",
+        genres=["RPG", "Adventure"],
+    )
+
+    db_session.add(game)
+    db_session.commit()
+    db_session.refresh(game)
+
+    return game
+
+@pytest.fixture
+def existing_user(db_session: Session) -> User:
+    user = User(
+        username="John",
+        email="jdoe@gmail.com",
+        hashed_password=hash_password("SecretPassword!"),
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    return user
+
+@pytest.fixture
+def authenticated_client(
+    client: TestClient,
+    existing_user: User,
+) -> Generator[TestClient, None, None]:
+    def override_get_current_user() -> User:
+        return existing_user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)

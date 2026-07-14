@@ -24,3 +24,7 @@ class FavoriteGameDuplicateError(Exception):
 
 class FavoriteGameNotFoundError(Exception):
     pass
+
+
+class GameAlreadyExistsError(Exception):
+    pass

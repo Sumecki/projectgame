@@ -9,6 +9,7 @@ from app.core.domain.models.favorite_game import FavoriteGame
 from app.core.domain.models.user import User
 from app.core.domain.schemas.favorite_game import FavoriteGameResponse
 from app.core.repository.favorite_game_repository import FavoriteGameRepository
+from app.core.repository.game_repository import GameRepository
 from app.core.services.favorite_game_service import FavoriteGameService
 
 favorite_game_router = APIRouter()
@@ -25,7 +26,11 @@ def add_favorite_game(
     db: Session = Depends(get_db),
 ) -> FavoriteGame:
     favorite_game_repository = FavoriteGameRepository(db)
-    favorite_game_service = FavoriteGameService(favorite_game_repository)
+    game_repository = GameRepository(db)
+    favorite_game_service = FavoriteGameService(
+        favorite_game_repository,
+        game_repository,
+    )
     return favorite_game_service.add_favorite_game(
         user_id=current_user.id,
         game_id=game_id,
@@ -42,7 +47,11 @@ def delete_favorite_game(
     db: Session = Depends(get_db),
 ) -> None:
     favorite_game_repository = FavoriteGameRepository(db)
-    favorite_game_service = FavoriteGameService(favorite_game_repository)
+    game_repository = GameRepository(db)
+    favorite_game_service = FavoriteGameService(
+        favorite_game_repository,
+        game_repository,
+    )
     favorite_game_service.remove_favorite_game(user_id=current_user.id, game_id=game_id)
 
 
@@ -55,5 +64,9 @@ def get_favorite_games(
     db: Session = Depends(get_db),
 ) -> list[FavoriteGame]:
     favorite_game_repository = FavoriteGameRepository(db)
-    favorite_game_service = FavoriteGameService(favorite_game_repository)
+    game_repository = GameRepository(db)
+    favorite_game_service = FavoriteGameService(
+        favorite_game_repository,
+        game_repository,
+    )
     return favorite_game_service.get_user_favorite_games(user_id=current_user.id)

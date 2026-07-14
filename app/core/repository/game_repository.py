@@ -13,7 +13,7 @@ class GameRepository:
         return self.session.query(Game).filter(Game.rawg_id == rawg_id).first()
 
     def get_game_by_id(self, game_id: UUID) -> Game | None:
-        return self.session.query(Game).filter(Game.id == game_id).first()
+        return self.session.get(Game, game_id)
 
     def create_game(self, game: Game) -> Game:
         self.session.add(game)
