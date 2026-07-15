@@ -83,11 +83,10 @@ class TestSearchGamesEndpoint:
         rawg_search_mock.assert_awaited_once_with(query="ab")
 
 
-class TestGetGameDetails:
+class TestGetGameDetailsEndpoint:
     GAME_NAME = "The Witcher 3"
     RAWG_ID = 3328
     DESCRIPTION = "Open world RPG."
-    GENRES = ["RPG", "Adventure"]
 
     def test_get_game_details_returns_existing_game_from_db(
         self,
@@ -104,19 +103,39 @@ class TestGetGameDetails:
             "rawg_id": self.RAWG_ID,
             "name": self.GAME_NAME,
             "description": self.DESCRIPTION,
-            "genres": self.GENRES,
+            "genres": ["RPG", "Adventure"],
         }
         rawg_get_game_mock.assert_not_awaited()
 
-    def test_get_game_details_creates_game_in_db_and_returns_it(
+    def test_get_game_details_returns_404_when_game_does_not_exist(
         self,
-        db_session: Session,
         client: TestClient,
         rawg_get_game_mock: AsyncMock,
     ):
         response = client.get(f"/rawg/{self.RAWG_ID}")
 
-        assert response.status_code == status.HTTP_200_OK
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        assert response.json() == {
+            "detail": "Game not found",
+        }
+
+        rawg_get_game_mock.assert_not_awaited()
+
+
+class TestCreateGameFromRawgEndpoint:
+    RAWG_ID = 3328
+    GAME_NAME = "The Witcher 3"
+    DESCRIPTION = "Open world RPG."
+
+    def test_create_game_from_rawg_creates_game_in_db_and_returns_it(
+        self,
+        db_session: Session,
+        client: TestClient,
+        rawg_get_game_mock: AsyncMock,
+    ):
+        response = client.post(f"/rawg/{self.RAWG_ID}")
+
+        assert response.status_code == status.HTTP_201_CREATED
 
         game_from_db = (
             db_session.query(Game)
@@ -129,53 +148,58 @@ class TestGetGameDetails:
             "rawg_id": self.RAWG_ID,
             "name": self.GAME_NAME,
             "description": self.DESCRIPTION,
-            "genres": self.GENRES,
+            "genres": ["RPG", "Adventure"],
         }
 
         assert game_from_db.rawg_id == self.RAWG_ID
         assert game_from_db.name == self.GAME_NAME
         assert game_from_db.description == self.DESCRIPTION
-        assert game_from_db.genres == self.GENRES
+        assert game_from_db.genres == ["RPG", "Adventure"]
 
         rawg_get_game_mock.assert_awaited_once_with(self.RAWG_ID)
 
-    def test_get_game_details_does_not_duplicate_game_in_db(
+    def test_create_game_from_rawg_returns_409_when_game_already_exists(
+        self,
+        db_session: Session,
+        client: TestClient,
+        game_in_db: Game,
+        rawg_get_game_mock: AsyncMock,
+    ):
+        response = client.post(f"/rawg/{game_in_db.rawg_id}")
+
+        assert response.status_code == status.HTTP_409_CONFLICT
+        assert response.json() == {
+            "detail": "Game already exists",
+        }
+
+        games = (
+            db_session.query(Game)
+            .filter(Game.rawg_id == game_in_db.rawg_id)
+            .all()
+        )
+
+        assert len(games) == 1
+        rawg_get_game_mock.assert_not_awaited()
+
+    def test_create_game_from_rawg_returns_422_when_rawg_id_is_not_int(
+        self,
+        client: TestClient,
+        rawg_get_game_mock: AsyncMock,
+    ):
+        response = client.post("/rawg/not-a-number")
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        rawg_get_game_mock.assert_not_awaited()
+
+    def test_create_game_from_rawg_returns_502_when_rawg_returns_invalid_response(
         self,
         db_session: Session,
         client: TestClient,
         rawg_get_game_mock: AsyncMock,
     ):
-        first_response = client.get(f"/rawg/{self.RAWG_ID}")
-        second_response = client.get(f"/rawg/{self.RAWG_ID}")
-
-        assert first_response.status_code == status.HTTP_200_OK
-        assert second_response.status_code == status.HTTP_200_OK
-
-        rawg_get_game_mock.assert_awaited_once_with(self.RAWG_ID)
-
-        games = db_session.query(Game).filter(Game.rawg_id == self.RAWG_ID).all()
-
-        assert len(games) == 1
-        assert first_response.json()["id"] == second_response.json()["id"]
-
-    def test_get_game_details_returns_422_when_rawg_id_is_not_int(
-        self,
-        client: TestClient,
-        rawg_get_game_mock: AsyncMock,
-    ):
-        response = client.get("/rawg/not-a-number")
-
-        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
-        rawg_get_game_mock.assert_not_awaited()
-
-    def test_get_game_details_returns_502_when_rawg_returns_invalid_response(
-        self,
-        client: TestClient,
-        rawg_get_game_mock: AsyncMock,
-    ):
         rawg_get_game_mock.return_value = {}
 
-        response = client.get(f"/rawg/{self.RAWG_ID}")
+        response = client.post(f"/rawg/{self.RAWG_ID}")
 
         assert response.status_code == status.HTTP_502_BAD_GATEWAY
         assert response.json() == {
@@ -183,3 +207,11 @@ class TestGetGameDetails:
         }
 
         rawg_get_game_mock.assert_awaited_once_with(self.RAWG_ID)
+
+        game_from_db = (
+            db_session.query(Game)
+            .filter(Game.rawg_id == self.RAWG_ID)
+            .first()
+        )
+
+        assert game_from_db is None

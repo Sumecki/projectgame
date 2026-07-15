@@ -3,7 +3,12 @@ from uuid import UUID
 import pytest
 
 from app.core.domain.models.favorite_game import FavoriteGame
-from app.core.exceptions import FavoriteGameDuplicateError, FavoriteGameNotFoundError
+from app.core.exceptions import (
+    FavoriteGameDuplicateError,
+    FavoriteGameNotFoundError,
+    GameNotFoundError,
+)
+
 
 class TestFavoriteGameService:
     GAME_ID = UUID("11111111-1111-1111-1111-111111111111")
@@ -12,9 +17,11 @@ class TestFavoriteGameService:
     def test_add_favorite_game_creates_fav_game(
         self,
         favorite_game_repository_mock,
+        game_repository_mock,
         favorite_game_service,
+        existing_game,
     ):
-
+        game_repository_mock.get_game_by_id.return_value = existing_game
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.return_value = None
         favorite_game_repository_mock.create_favorite_game.side_effect = (
             lambda favorite_game: favorite_game
@@ -42,24 +49,58 @@ class TestFavoriteGameService:
             game_id=self.GAME_ID,
         )
         favorite_game_repository_mock.create_favorite_game.assert_called_once()
+        game_repository_mock.get_game_by_id.assert_called_once_with(
+            self.GAME_ID
+        )
         
+    def test_add_favorite_game_raises_error_when_game_does_not_exist(
+        self,
+        favorite_game_repository_mock,
+        game_repository_mock,
+        favorite_game_service,
+    ):
+        game_repository_mock.get_game_by_id.return_value = None
+
+        with pytest.raises(GameNotFoundError, match="Game not found"):
+            favorite_game_service.add_favorite_game(
+                user_id=self.USER_ID,
+                game_id=self.GAME_ID,
+            )
+        
+        game_repository_mock.get_game_by_id.assert_called_once_with(self.GAME_ID)
+
+        favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.assert_not_called()
+        
+        favorite_game_repository_mock.create_favorite_game.assert_not_called()
+
     def test_add_favorite_game_raises_error_when_game_already_in_favorites(
         self,
         favorite_game_repository_mock,
+        game_repository_mock,
         favorite_game_service,
+        existing_game,
     ):
-        existing_fav_game = FavoriteGame(user_id=self.USER_ID, game_id=self.GAME_ID)
+        game_repository_mock.get_game_by_id.return_value = existing_game
+
+        existing_fav_game = FavoriteGame(
+            user_id=self.USER_ID,
+            game_id=self.GAME_ID
+        )
 
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.return_value = (
             existing_fav_game
         )
 
-        with pytest.raises(FavoriteGameDuplicateError):
+        with pytest.raises(
+            FavoriteGameDuplicateError,
+            match="Game is already in your favorite list",
+        ):
             favorite_game_service.add_favorite_game(
                 user_id=self.USER_ID,
                 game_id=self.GAME_ID,
             )
-
+        
+        game_repository_mock.get_game_by_id.assert_called_once_with(self.GAME_ID)
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.assert_called_once_with(
             user_id=self.USER_ID,
             game_id=self.GAME_ID,
@@ -69,8 +110,11 @@ class TestFavoriteGameService:
     def test_remove_favorite_game_removes_existing_fav_game(
         self,
         favorite_game_repository_mock,
+        game_repository_mock,
         favorite_game_service,
+        existing_game,
     ):
+        game_repository_mock.get_game_by_id.return_value = existing_game
         existing_fav_game = FavoriteGame(user_id=self.USER_ID, game_id=self.GAME_ID)
         
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.return_value = (
@@ -90,25 +134,59 @@ class TestFavoriteGameService:
         favorite_game_repository_mock.delete_favorite_game.assert_called_once_with(
             existing_fav_game
         )
+        game_repository_mock.get_game_by_id.assert_called_once_with(
+            self.GAME_ID
+        )
     
     def test_remove_favorite_game_raises_error_when_game_is_not_in_fav_games(
         self,
         favorite_game_repository_mock,
+        game_repository_mock,
         favorite_game_service,
+        existing_game,
     ):
+        game_repository_mock.get_game_by_id.return_value = existing_game
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.return_value = None
 
-        with pytest.raises(FavoriteGameNotFoundError):
+        with pytest.raises(
+            FavoriteGameNotFoundError,
+            match="Game is not in your favorite list",
+        ):
             favorite_game_service.remove_favorite_game(
                 user_id=self.USER_ID,
                 game_id=self.GAME_ID,
             )
         
+        game_repository_mock.get_game_by_id.assert_called_once_with(self.GAME_ID)
+
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.assert_called_once_with(
             user_id=self.USER_ID,
             game_id=self.GAME_ID,
         )
 
+        favorite_game_repository_mock.delete_favorite_game.assert_not_called()
+
+    def test_remove_favorite_game_raises_error_when_game_does_not_exist(
+        self,
+        favorite_game_repository_mock,
+        game_repository_mock,
+        favorite_game_service,
+    ):
+        game_repository_mock.get_game_by_id.return_value = None
+
+        with pytest.raises(
+            GameNotFoundError,
+            match="Game not found",
+        ):
+            favorite_game_service.remove_favorite_game(
+                user_id=self.USER_ID,
+                game_id=self.GAME_ID,
+            )
+
+        game_repository_mock.get_game_by_id.assert_called_once_with(
+            self.GAME_ID
+        )
+        favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.assert_not_called()
         favorite_game_repository_mock.delete_favorite_game.assert_not_called()
 
     def test_get_user_favorite_games_list_returns_valid_list(

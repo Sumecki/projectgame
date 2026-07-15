@@ -5,6 +5,7 @@ import jwt
 import pytest
 
 from app.core.domain.models.user import User
+from app.core.domain.models.game import Game
 from app.core.repository.favorite_game_repository import FavoriteGameRepository
 from app.core.repository.game_repository import GameRepository
 from app.core.repository.user_repository import UserRepository
@@ -139,7 +140,25 @@ def rawg_search_games_response():
 def favorite_game_repository_mock() -> Mock:
     return Mock(spec=FavoriteGameRepository)
 
+@pytest.fixture
+def game_repository_mock() -> Mock:
+    return Mock(spec=GameRepository)
 
 @pytest.fixture
-def favorite_game_service(favorite_game_repository_mock: Mock) -> FavoriteGameService:
-    return FavoriteGameService(favorite_game_repository_mock)
+def favorite_game_service(
+    favorite_game_repository_mock: Mock,
+    game_repository_mock: Mock
+) -> FavoriteGameService:
+    return FavoriteGameService(
+        favorite_game_repository=favorite_game_repository_mock,
+        game_repository=game_repository_mock
+    )
+
+@pytest.fixture
+def existing_game() -> Game:
+    return Game(
+            rawg_id=3328,
+            name="The Witcher 3",
+            description="Open world RPG.",
+            genres=["RPG", "Adventure"],
+        )

@@ -1,15 +1,17 @@
 import pytest
 
-from app.core.domain.models.game import Game
 from app.core.domain.schemas.game import GameSearchResult
-from app.core.exceptions import GameNotFoundError, InvalidRawgResponseError
+from app.core.exceptions import (
+    GameAlreadyExistsError,
+    GameNotFoundError,
+    InvalidRawgResponseError,
+)
 
 
 class TestGameService:
     GAME_NAME = "The Witcher 3"
     RAWG_ID = 3328
     DESCRIPTION = "Open world RPG."
-
 
     def test_build_game_from_rawg_data_returns_valid_game(self, game_service):
         game_data = {
@@ -93,24 +95,17 @@ class TestGameService:
 
         rawg_client_mock.search_games.assert_awaited_once_with(query=self.GAME_NAME)
 
-    @pytest.mark.asyncio
-    async def test_get_or_create_game_by_rawg_id_returns_game_from_db(
+    def test_get_game_by_rawg_id_returns_game_from_db(
         self,
         mocks_for_game_service,
         game_service,
+        existing_game,
     ):
         game_repository_mock, rawg_client_mock = mocks_for_game_service
 
-        existing_game = Game(
-            rawg_id=self.RAWG_ID,
-            name=self.GAME_NAME,
-            description=self.DESCRIPTION,
-            genres=["RPG", "Adventure"],
-        )
-
         game_repository_mock.get_game_by_rawg_id.return_value = existing_game
 
-        game_from_db = await game_service.get_or_create_game_by_rawg_id(self.RAWG_ID)
+        game_from_db = game_service.get_game_by_rawg_id(self.RAWG_ID)
 
         assert game_from_db is existing_game
 
@@ -118,8 +113,26 @@ class TestGameService:
         rawg_client_mock.get_game.assert_not_awaited()
         game_repository_mock.create_game.assert_not_called()
 
+    def test_get_game_by_rawg_id_raises_error_when_game_does_not_exist(
+        self,
+        mocks_for_game_service,
+        game_service,
+    ):
+        game_repository_mock, rawg_client_mock = mocks_for_game_service
+
+        game_repository_mock.get_game_by_rawg_id.return_value = None
+
+        with pytest.raises(GameNotFoundError, match="Game not found"):
+            game_service.get_game_by_rawg_id(self.RAWG_ID)
+
+        game_repository_mock.get_game_by_rawg_id.assert_called_once_with(
+            self.RAWG_ID,
+        )
+        rawg_client_mock.get_game.assert_not_awaited()
+        game_repository_mock.create_game.assert_not_called()
+
     @pytest.mark.asyncio
-    async def test_get_or_create_game_by_rawg_id_creates_game_when_not_already_in_db(
+    async def test_create_game_from_rawg_creates_game_when_not_already_in_db(
         self,
         mocks_for_game_service,
         game_service,
@@ -142,7 +155,7 @@ class TestGameService:
 
         game_repository_mock.create_game.side_effect = lambda game: game
 
-        created_game = await game_service.get_or_create_game_by_rawg_id(self.RAWG_ID)
+        created_game = await game_service.create_game_from_rawg(self.RAWG_ID)
 
         saved_game = game_repository_mock.create_game.call_args.args[0]
 
@@ -158,4 +171,27 @@ class TestGameService:
         assert saved_game is created_game
         assert saved_game.rawg_id == self.RAWG_ID
         assert saved_game.name == self.GAME_NAME
+
+    @pytest.mark.asyncio
+    async def test_create_game_from_rawg_raises_error_when_game_already_exists(
+        self,
+        mocks_for_game_service,
+        game_service,
+        existing_game
+    ):
+        game_repository_mock, rawg_client_mock = mocks_for_game_service
+
+        game_repository_mock.get_game_by_rawg_id.return_value = existing_game
+
+        with pytest.raises(
+            GameAlreadyExistsError,
+            match="Game already exists",
+        ):
+            await game_service.create_game_from_rawg(self.RAWG_ID)
+
+        game_repository_mock.get_game_by_rawg_id.assert_called_once_with(
+            self.RAWG_ID,
+        )
+        rawg_client_mock.get_game.assert_not_awaited()
+        game_repository_mock.create_game.assert_not_called()
         
