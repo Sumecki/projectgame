@@ -7,12 +7,33 @@ from app.auth.auth import get_current_user
 from app.core.db.database import get_db
 from app.core.domain.models.favorite_game import FavoriteGame
 from app.core.domain.models.user import User
-from app.core.domain.schemas.favorite_game import FavoriteGameResponse
+from app.core.domain.schemas.favorite_game import (
+    FavoriteGameResponse,
+    MostPopularGameResponse,
+)
 from app.core.repository.favorite_game_repository import FavoriteGameRepository
 from app.core.repository.game_repository import GameRepository
 from app.core.services.favorite_game_service import FavoriteGameService
 
 favorite_game_router = APIRouter()
+
+
+@favorite_game_router.get(
+    "/most-popular",
+    response_model=MostPopularGameResponse,
+)
+def get_most_popular_game(
+    db: Session = Depends(get_db),
+) -> MostPopularGameResponse:
+    favorite_game_repository = FavoriteGameRepository(db)
+    game_repository = GameRepository(db)
+
+    favorite_game_service = FavoriteGameService(
+        favorite_game_repository=favorite_game_repository,
+        game_repository=game_repository,
+    )
+
+    return favorite_game_service.get_most_popular_game()
 
 
 @favorite_game_router.post(

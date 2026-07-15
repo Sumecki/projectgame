@@ -1,8 +1,11 @@
 from uuid import UUID
 
+from sqlalchemy import func
+from sqlalchemy.engine import Row
 from sqlalchemy.orm import Session
 
 from app.core.domain.models.favorite_game import FavoriteGame
+from app.core.domain.models.game import Game
 
 
 class FavoriteGameRepository:
@@ -40,3 +43,21 @@ class FavoriteGameRepository:
     def delete_favorite_game(self, favorite_game: FavoriteGame) -> None:
         self.session.delete(favorite_game)
         self.session.commit()
+
+    def get_most_favorited_game(self) -> Row[tuple[Game, int]] | None:
+        return (
+            self.session.query(
+                Game,
+                func.count(FavoriteGame.id).label("favorites_count"),
+            )
+            .join(
+                FavoriteGame,
+                FavoriteGame.game_id == Game.id,
+            )
+            .group_by(Game.id)
+            .order_by(
+                func.count(FavoriteGame.id).desc(),
+                Game.id.asc(),
+            )
+            .first()
+        )
