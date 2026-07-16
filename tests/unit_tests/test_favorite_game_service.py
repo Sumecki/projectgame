@@ -84,7 +84,7 @@ class TestFavoriteGameService:
 
         existing_fav_game = FavoriteGame(
             user_id=self.USER_ID,
-            game_id=self.GAME_ID
+            game_id=self.GAME_ID,
         )
 
         favorite_game_repository_mock.get_favorite_game_by_user_id_and_game_id.return_value = (
@@ -209,3 +209,36 @@ class TestFavoriteGameService:
         favorite_game_repository_mock.get_favorite_games_by_user_id.assert_called_once_with(
             user_id=self.USER_ID,
         )
+
+    def test_get_most_popular_game_returns_game_with_favorites_count(
+        self,
+        favorite_game_repository_mock,
+        favorite_game_service,
+        existing_game,
+    ):
+        favorite_game_repository_mock.get_most_favorited_game.return_value = (
+            existing_game,
+            3,
+        )
+
+        result = favorite_game_service.get_most_popular_game()
+
+        assert result.game.id == existing_game.id
+        assert result.game.rawg_id == existing_game.rawg_id
+        assert result.game.name == existing_game.name
+        assert result.favorites_count == 3
+
+        favorite_game_repository_mock.get_most_favorited_game.assert_called_once_with()
+
+    def test_get_most_popular_game_raises_error_when_no_favorites_exist(
+        self,
+        favorite_game_repository_mock,
+        favorite_game_service,
+    ):
+        favorite_game_repository_mock.get_most_favorited_game.return_value = None
+
+        with pytest.raises(FavoriteGameNotFoundError, match="No favorite games found"):
+            favorite_game_service.get_most_popular_game()
+        
+        favorite_game_repository_mock.get_most_favorited_game.assert_called_once_with()
+        

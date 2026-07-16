@@ -189,3 +189,58 @@ def authenticated_client(
         yield client
     finally:
         app.dependency_overrides.pop(get_current_user, None)
+
+@pytest.fixture
+def second_game_in_db(db_session: Session) -> Game:
+    game = Game(
+        rawg_id=3498,
+        name="Grand Theft Auto 5",
+        description="Open world action game.",
+        genres=["Action", "Adventure"],
+    )
+
+    db_session.add(game)
+    db_session.commit()
+    db_session.refresh(game)
+
+    return game
+
+@pytest.fixture
+def additional_users(db_session: Session) -> list[User]:
+    users = [
+            User(
+            username="Tomasz",
+            email="tomasz@gmail.com",
+            hashed_password=hash_password("SecretPassword!"),
+        ),
+            User(
+            username="Stefan",
+            email="stefan@gmail.com",
+            hashed_password=hash_password("SecretPassword!"),
+        ),
+    ]
+
+    db_session.add_all(users)
+    db_session.commit()
+
+    for user in users:
+        db_session.refresh(user)
+
+    return users
+
+@pytest.fixture
+def favorite_game_in_db(
+    db_session: Session,
+    existing_user: User,
+    game_in_db: Game,
+):
+    favorite_game = FavoriteGame(
+        user_id=existing_user.id,
+        game_id=game_in_db.id,
+    )
+
+    db_session.add(favorite_game)
+    db_session.commit()
+    db_session.refresh(favorite_game)
+
+    return favorite_game
