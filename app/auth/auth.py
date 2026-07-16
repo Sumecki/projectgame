@@ -18,7 +18,7 @@ from app.core.services.user_service import UserService
 
 settings = get_settings()
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/login")
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="auth/login")
 
 
 def create_access_token(user_email: str) -> tuple[str, float]:

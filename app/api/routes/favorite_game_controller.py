@@ -15,7 +15,10 @@ from app.core.repository.favorite_game_repository import FavoriteGameRepository
 from app.core.repository.game_repository import GameRepository
 from app.core.services.favorite_game_service import FavoriteGameService
 
-favorite_game_router = APIRouter()
+favorite_game_router = APIRouter(
+    prefix="/favorite-games",
+    tags=["favorite-games"],
+)
 
 
 @favorite_game_router.get(
@@ -37,7 +40,7 @@ def get_most_popular_game(
 
 
 @favorite_game_router.post(
-    "/favorite-games/{game_id}",
+    "/{game_id}",
     response_model=FavoriteGameResponse,
     status_code=status.HTTP_201_CREATED,
 )
@@ -59,7 +62,7 @@ def add_favorite_game(
 
 
 @favorite_game_router.delete(
-    "/favorite-games/{game_id}",
+    "/{game_id}",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_favorite_game(
@@ -77,7 +80,7 @@ def delete_favorite_game(
 
 
 @favorite_game_router.get(
-    "/favorite-games",
+    "",
     response_model=list[FavoriteGameResponse],
 )
 def get_favorite_games(

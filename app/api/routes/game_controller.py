@@ -10,7 +10,7 @@ from app.core.repository.game_repository import GameRepository
 from app.core.services.game_service import GameService
 from app.core.services.rawg_client import RawgApiClient
 
-game_router = APIRouter()
+game_router = APIRouter(prefix="/games", tags=["games"])
 
 
 @game_router.get(

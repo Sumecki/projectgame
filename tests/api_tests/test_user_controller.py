@@ -16,7 +16,7 @@ class TestRegisterEndpoint:
         db_session: Session,
         register_payload: dict[str, str],
     ):
-        response = client.post("/register", json=register_payload)
+        response = client.post("/auth/register", json=register_payload)
 
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -68,7 +68,7 @@ class TestRegisterEndpoint:
         payload_override: dict[str, str],
         expected_detail: str,
     ):
-        first_response = client.post("/register", json=register_payload)
+        first_response = client.post("/auth/register", json=register_payload)
 
         assert first_response.status_code == status.HTTP_201_CREATED
 
@@ -77,7 +77,7 @@ class TestRegisterEndpoint:
             **payload_override,
         }
 
-        second_response = client.post("/register", json=duplicate_payload)
+        second_response = client.post("/auth/register", json=duplicate_payload)
 
         assert second_response.status_code == status.HTTP_409_CONFLICT
         assert second_response.json() == {"detail": expected_detail}
@@ -92,7 +92,7 @@ class TestRegisterEndpoint:
             "email": "invalid-email",
         }
 
-        response = client.post("/register", json=invalid_email_payload)
+        response = client.post("/auth/register", json=invalid_email_payload)
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
 
@@ -103,12 +103,12 @@ class TestLoginEndpoint:
         client: TestClient,
         register_payload: dict[str, str],
     ):
-        register_response = client.post("/register", json=register_payload)
+        register_response = client.post("/auth/register", json=register_payload)
 
         assert register_response.status_code == status.HTTP_201_CREATED
 
         login_response = client.post(
-            "/login",
+            "/auth/login",
             json={
                 "email": register_payload["email"],
                 "password": register_payload["password"],
@@ -147,7 +147,7 @@ class TestLoginEndpoint:
         register_payload: dict[str, str],
         payload_override: dict[str, str],
     ):
-        register_response = client.post("/register", json=register_payload)
+        register_response = client.post("/auth/register", json=register_payload)
 
         assert register_response.status_code == status.HTTP_201_CREATED
 
@@ -157,7 +157,7 @@ class TestLoginEndpoint:
             **payload_override,
         }
 
-        login_response = client.post("/login", json=login_payload)
+        login_response = client.post("/auth/login", json=login_payload)
 
         assert login_response.status_code == status.HTTP_401_UNAUTHORIZED
         assert login_response.json() == {"detail": "Invalid email or password"}
@@ -167,7 +167,7 @@ class TestLoginEndpoint:
         client: TestClient,
     ):
         response = client.post(
-            "/login",
+            "/auth/login",
             json={
                 "email": "invalid-email",
                 "password": "SecretPassword!",
@@ -183,14 +183,14 @@ class TestUsersMeEndpoint:
         client: TestClient,
         register_payload: dict[str, str],
     ):
-        register_response = client.post("/register", json=register_payload)
+        register_response = client.post("/auth/register", json=register_payload)
 
         assert register_response.status_code == status.HTTP_201_CREATED
 
         registered_user_id = register_response.json()["id"]
 
         login_response = client.post(
-            "/login",
+            "/auth/login",
             json={
                 "email": register_payload["email"],
                 "password": register_payload["password"],
@@ -202,7 +202,7 @@ class TestUsersMeEndpoint:
         access_token = login_response.json()["access_token"]
 
         response = client.get(
-            "/users/me",
+            "/auth/users/me",
             headers={
                 "Authorization": f"Bearer {access_token}",
             },
@@ -240,7 +240,7 @@ class TestUsersMeEndpoint:
         headers: dict[str, str],
         expected_detail: str,
     ):
-        response = client.get("/users/me", headers=headers)
+        response = client.get("/auth/users/me", headers=headers)
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
         assert response.json() == {"detail": expected_detail}

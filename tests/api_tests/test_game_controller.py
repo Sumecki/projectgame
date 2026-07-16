@@ -14,7 +14,7 @@ class TestSearchGamesEndpoint:
         rawg_search_mock: AsyncMock,
     ):
         response = client.get(
-            "/search",
+            "/games/search",
             params={"query": "Witcher 3"},
         )
 
@@ -37,7 +37,7 @@ class TestSearchGamesEndpoint:
         rawg_search_mock.return_value = {"results": []}
 
         response = client.get(
-            "/search",
+            "/games/search",
             params={"query": "Non existing game"},
         )
 
@@ -51,7 +51,7 @@ class TestSearchGamesEndpoint:
         client: TestClient,
         rawg_search_mock: AsyncMock,
     ):
-        response = client.get("/search")
+        response = client.get("/games/search")
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         rawg_search_mock.assert_not_awaited()
@@ -62,7 +62,7 @@ class TestSearchGamesEndpoint:
         rawg_search_mock: AsyncMock,
     ):
         response = client.get(
-            "/search",
+            "/games/search",
             params={"query": "a"},
         )
 
@@ -75,7 +75,7 @@ class TestSearchGamesEndpoint:
         rawg_search_mock: AsyncMock,
     ):
         response = client.get(
-            "/search",
+            "/games/search",
             params={"query": "ab"},
         )
 
@@ -95,7 +95,7 @@ class TestGetGameDetailsEndpoint:
         game_in_db: Game,
     ):
 
-        response = client.get(f"/rawg/{game_in_db.rawg_id}")
+        response = client.get(f"/games/rawg/{game_in_db.rawg_id}")
 
         assert response.status_code == status.HTTP_200_OK
         assert response.json() == {
@@ -112,7 +112,7 @@ class TestGetGameDetailsEndpoint:
         client: TestClient,
         rawg_get_game_mock: AsyncMock,
     ):
-        response = client.get(f"/rawg/{self.RAWG_ID}")
+        response = client.get(f"/games/rawg/{self.RAWG_ID}")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.json() == {
@@ -133,7 +133,7 @@ class TestCreateGameFromRawgEndpoint:
         client: TestClient,
         rawg_get_game_mock: AsyncMock,
     ):
-        response = client.post(f"/rawg/{self.RAWG_ID}")
+        response = client.post(f"/games/rawg/{self.RAWG_ID}")
 
         assert response.status_code == status.HTTP_201_CREATED
 
@@ -165,7 +165,7 @@ class TestCreateGameFromRawgEndpoint:
         game_in_db: Game,
         rawg_get_game_mock: AsyncMock,
     ):
-        response = client.post(f"/rawg/{game_in_db.rawg_id}")
+        response = client.post(f"/games/rawg/{game_in_db.rawg_id}")
 
         assert response.status_code == status.HTTP_409_CONFLICT
         assert response.json() == {
@@ -186,7 +186,7 @@ class TestCreateGameFromRawgEndpoint:
         client: TestClient,
         rawg_get_game_mock: AsyncMock,
     ):
-        response = client.post("/rawg/not-a-number")
+        response = client.post("/games/rawg/not-a-number")
 
         assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
         rawg_get_game_mock.assert_not_awaited()
@@ -199,7 +199,7 @@ class TestCreateGameFromRawgEndpoint:
     ):
         rawg_get_game_mock.return_value = {}
 
-        response = client.post(f"/rawg/{self.RAWG_ID}")
+        response = client.post(f"/games/rawg/{self.RAWG_ID}")
 
         assert response.status_code == status.HTTP_502_BAD_GATEWAY
         assert response.json() == {

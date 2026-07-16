@@ -150,7 +150,7 @@ class TestGetMostPopularGame:
 
         assert db_session.query(FavoriteGame).count() == 4
 
-        response = client.get("/most-popular")
+        response = client.get("/favorite-games/most-popular")
 
         assert response.status_code == status.HTTP_200_OK
 
@@ -167,7 +167,7 @@ class TestGetMostPopularGame:
         self,
         client: TestClient,
     ):
-        response = client.get("/most-popular")
+        response = client.get("/favorite-games/most-popular")
 
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.json() == {
