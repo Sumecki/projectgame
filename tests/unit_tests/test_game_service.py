@@ -177,7 +177,7 @@ class TestGameService:
         self,
         mocks_for_game_service,
         game_service,
-        existing_game
+        existing_game,
     ):
         game_repository_mock, rawg_client_mock = mocks_for_game_service
 
@@ -186,12 +186,12 @@ class TestGameService:
         with pytest.raises(
             GameAlreadyExistsError,
             match="Game already exists",
-        ):
+        ) as exc_info:
             await game_service.create_game_from_rawg(self.RAWG_ID)
 
+        assert exc_info.value.game_id == existing_game.id
         game_repository_mock.get_game_by_rawg_id.assert_called_once_with(
             self.RAWG_ID,
         )
         rawg_client_mock.get_game.assert_not_awaited()
         game_repository_mock.create_game.assert_not_called()
-        

@@ -1,3 +1,6 @@
+from uuid import UUID
+
+
 class UserAlreadyExistsError(Exception):
     pass
 
@@ -27,4 +30,6 @@ class FavoriteGameNotFoundError(Exception):
 
 
 class GameAlreadyExistsError(Exception):
-    pass
+    def __init__(self, game_id: UUID) -> None:
+        self.game_id = game_id
+        super().__init__("Game already exists")

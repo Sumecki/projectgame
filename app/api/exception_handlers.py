@@ -85,5 +85,9 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: GameAlreadyExistsError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)}
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail": str(exc),
+                "game_id": str(exc.game_id),
+            },
         )

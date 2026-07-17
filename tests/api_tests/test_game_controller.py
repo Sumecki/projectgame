@@ -170,6 +170,7 @@ class TestCreateGameFromRawgEndpoint:
         assert response.status_code == status.HTTP_409_CONFLICT
         assert response.json() == {
             "detail": "Game already exists",
+            "game_id": str(game_in_db.id),
         }
 
         games = (

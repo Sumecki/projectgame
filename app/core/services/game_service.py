@@ -61,7 +61,7 @@ class GameService:
         existing_game = self.game_repository.get_game_by_rawg_id(rawg_id)
 
         if existing_game is not None:
-            raise GameAlreadyExistsError("Game already exists")
+            raise GameAlreadyExistsError(game_id=existing_game.id)
 
         game_data = await self.rawg_client.get_game(rawg_id)
         game = self._build_game_from_rawg_data(game_data)
