@@ -59,6 +59,29 @@ class TestRawgApiClient:
         )
 
     @pytest.mark.asyncio
+    async def test_search_games_passes_custom_page_size(
+        self,
+        rawg_client,
+    ):
+        rawg_client._make_request = AsyncMock(
+            return_value ={"results":[]}
+        )
+
+        await rawg_client.search_games(
+            "counter strike",
+            page_size=5,
+        )
+
+        rawg_client._make_request.assert_awaited_once_with(
+            method="GET",
+            path="/games",
+            params={
+                "search": "counter strike",
+                "page_size": 5,
+            }
+        )
+
+    @pytest.mark.asyncio
     async def test_get_game_calls_make_request_with_correct_arguments(
         self, rawg_client
     ):
@@ -123,7 +146,10 @@ class TestRawgApiClient:
             await rawg_client._make_request(
                 method="GET",
                 path="/games",
-                params={"search": "witcher"},
+                params={
+                    "search": "witcher",
+                    "page_size": 10,
+                },
             )
 
         mock_client.request.assert_awaited_once_with(
@@ -132,6 +158,7 @@ class TestRawgApiClient:
             params={
                 "key": rawg_client.api_key,
                 "search": "witcher",
+                "page_size": 10,
             },
         )
 
