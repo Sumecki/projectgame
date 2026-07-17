@@ -1,7 +1,8 @@
 from uuid import UUID
 
 from app.core.domain.models.favorite_game import FavoriteGame
-from app.core.domain.schemas.favorite_game import GameResponse, MostPopularGameResponse
+from app.core.domain.schemas.favorite_game import MostPopularGameResponse
+from app.core.domain.schemas.game import GameResponse
 from app.core.exceptions import (
     FavoriteGameDuplicateError,
     FavoriteGameNotFoundError,
@@ -66,11 +67,11 @@ class FavoriteGameService:
             user_id=user_id,
         )
 
-    def get_most_popular_game(self) -> MostPopularGameResponse:
+    def get_most_popular_game(self) -> MostPopularGameResponse | None:
         result = self.favorite_game_repository.get_most_favorited_game()
 
         if result is None:
-            raise FavoriteGameNotFoundError("No favorite games found")
+            return None
 
         game, favorites_count = result
 

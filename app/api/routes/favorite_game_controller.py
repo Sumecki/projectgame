@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Response, status
 from sqlalchemy.orm import Session
 
 from app.auth.auth import get_current_user
@@ -31,11 +31,21 @@ def get_favorite_game_service(db: Session = Depends(get_db)) -> FavoriteGameServ
 @favorite_game_router.get(
     "/most-popular",
     response_model=MostPopularGameResponse,
+    responses={
+        status.HTTP_204_NO_CONTENT: {
+            "description": "No favorite games exist",
+        },
+    },
 )
 def get_most_popular_game(
     favorite_game_service: FavoriteGameService = Depends(get_favorite_game_service),
-) -> MostPopularGameResponse:
-    return favorite_game_service.get_most_popular_game()
+) -> MostPopularGameResponse | Response:
+    result = favorite_game_service.get_most_popular_game()
+
+    if result is None:
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    return result
 
 
 @favorite_game_router.post(

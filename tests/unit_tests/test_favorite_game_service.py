@@ -230,15 +230,14 @@ class TestFavoriteGameService:
 
         favorite_game_repository_mock.get_most_favorited_game.assert_called_once_with()
 
-    def test_get_most_popular_game_raises_error_when_no_favorites_exist(
+    def test_get_most_popular_game_returns_none_when_no_favorites_exist(
         self,
         favorite_game_repository_mock,
         favorite_game_service,
     ):
         favorite_game_repository_mock.get_most_favorited_game.return_value = None
 
-        with pytest.raises(FavoriteGameNotFoundError, match="No favorite games found"):
-            favorite_game_service.get_most_popular_game()
+        result = favorite_game_service.get_most_popular_game()
         
+        assert result is None
         favorite_game_repository_mock.get_most_favorited_game.assert_called_once_with()
-        

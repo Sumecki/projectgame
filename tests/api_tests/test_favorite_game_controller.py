@@ -163,16 +163,14 @@ class TestGetMostPopularGame:
         assert response_data["game"]["description"] == game_in_db.description
         assert response_data["game"]["genres"] == game_in_db.genres
 
-    def test_get_most_popular_game_returns_404_when_no_favorite_games(
+    def test_get_most_popular_game_returns_204_when_no_favorite_games(
         self,
         client: TestClient,
     ):
         response = client.get("/favorite-games/most-popular")
 
-        assert response.status_code == status.HTTP_404_NOT_FOUND
-        assert response.json() == {
-            "detail": "No favorite games found",
-        }
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert response.content == b""
 
 
 class TestDeleteFavoriteGame:
