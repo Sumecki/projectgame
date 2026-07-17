@@ -21,21 +21,20 @@ favorite_game_router = APIRouter(
 )
 
 
+def get_favorite_game_service(db: Session = Depends(get_db)) -> FavoriteGameService:
+    return FavoriteGameService(
+        favorite_game_repository=FavoriteGameRepository(db),
+        game_repository=GameRepository(db),
+    )
+
+
 @favorite_game_router.get(
     "/most-popular",
     response_model=MostPopularGameResponse,
 )
 def get_most_popular_game(
-    db: Session = Depends(get_db),
+    favorite_game_service: FavoriteGameService = Depends(get_favorite_game_service),
 ) -> MostPopularGameResponse:
-    favorite_game_repository = FavoriteGameRepository(db)
-    game_repository = GameRepository(db)
-
-    favorite_game_service = FavoriteGameService(
-        favorite_game_repository=favorite_game_repository,
-        game_repository=game_repository,
-    )
-
     return favorite_game_service.get_most_popular_game()
 
 
@@ -47,14 +46,8 @@ def get_most_popular_game(
 def add_favorite_game(
     game_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    favorite_game_service: FavoriteGameService = Depends(get_favorite_game_service),
 ) -> FavoriteGame:
-    favorite_game_repository = FavoriteGameRepository(db)
-    game_repository = GameRepository(db)
-    favorite_game_service = FavoriteGameService(
-        favorite_game_repository,
-        game_repository,
-    )
     return favorite_game_service.add_favorite_game(
         user_id=current_user.id,
         game_id=game_id,
@@ -68,14 +61,8 @@ def add_favorite_game(
 def delete_favorite_game(
     game_id: UUID,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    favorite_game_service: FavoriteGameService = Depends(get_favorite_game_service),
 ) -> None:
-    favorite_game_repository = FavoriteGameRepository(db)
-    game_repository = GameRepository(db)
-    favorite_game_service = FavoriteGameService(
-        favorite_game_repository,
-        game_repository,
-    )
     favorite_game_service.remove_favorite_game(user_id=current_user.id, game_id=game_id)
 
 
@@ -85,12 +72,6 @@ def delete_favorite_game(
 )
 def get_favorite_games(
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    favorite_game_service: FavoriteGameService = Depends(get_favorite_game_service),
 ) -> list[FavoriteGame]:
-    favorite_game_repository = FavoriteGameRepository(db)
-    game_repository = GameRepository(db)
-    favorite_game_service = FavoriteGameService(
-        favorite_game_repository,
-        game_repository,
-    )
     return favorite_game_service.get_user_favorite_games(user_id=current_user.id)

@@ -13,20 +13,21 @@ from app.core.services.rawg_client import RawgApiClient
 game_router = APIRouter(prefix="/games", tags=["games"])
 
 
+def get_game_service(db: Session = Depends(get_db)) -> GameService:
+    return GameService(
+        game_repository=GameRepository(db),
+        rawg_client=RawgApiClient(),
+    )
+
+
 @game_router.get(
     "/search",
     response_model=list[GameSearchResult],
 )
 async def search_games(
     query: Annotated[str, Query(min_length=2)],
-    db: Session = Depends(get_db),
+    game_service: GameService = Depends(get_game_service),
 ) -> list[GameSearchResult]:
-    game_repository = GameRepository(db)
-    rawg_client = RawgApiClient()
-    game_service = GameService(
-        game_repository=game_repository,
-        rawg_client=rawg_client,
-    )
     return await game_service.search_games_from_rawg(query=query)
 
 
@@ -36,14 +37,8 @@ async def search_games(
 )
 def get_game_details(
     rawg_id: int,
-    db: Session = Depends(get_db),
+    game_service: GameService = Depends(get_game_service),
 ) -> Game:
-    game_repository = GameRepository(db)
-    rawg_client = RawgApiClient()
-    game_service = GameService(
-        game_repository=game_repository,
-        rawg_client=rawg_client,
-    )
     return game_service.get_game_by_rawg_id(rawg_id)
 
 
@@ -54,12 +49,6 @@ def get_game_details(
 )
 async def create_game_from_rawg(
     rawg_id: int,
-    db: Session = Depends(get_db),
+    game_service: GameService = Depends(get_game_service),
 ) -> Game:
-    game_repository = GameRepository(db)
-    rawg_client = RawgApiClient()
-    game_service = GameService(
-        game_repository=game_repository,
-        rawg_client=rawg_client,
-    )
     return await game_service.create_game_from_rawg(rawg_id)
