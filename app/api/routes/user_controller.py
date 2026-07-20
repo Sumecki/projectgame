@@ -11,7 +11,10 @@ from app.core.domain.schemas.user import UserCreate, UserLogin, UserResponse
 from app.core.repository.user_repository import UserRepository
 from app.core.services.user_service import UserService
 
-user_router = APIRouter()
+user_router = APIRouter(
+    prefix="/auth",
+    tags=["auth"],
+)
 
 
 @user_router.post(

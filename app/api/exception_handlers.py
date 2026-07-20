@@ -2,7 +2,12 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
+    FavoriteGameDuplicateError,
+    FavoriteGameNotFoundError,
+    GameAlreadyExistsError,
+    GameNotFoundError,
     InvalidCredentialsError,
+    InvalidRawgResponseError,
     TokenValidationError,
     UserAlreadyExistsError,
 )
@@ -36,4 +41,53 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(GameNotFoundError)
+    async def game_not_found_handler(
+        _request: Request,
+        exc: GameNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(InvalidRawgResponseError)
+    async def invalid_rawg_response_handler(
+        _request: Request,
+        exc: InvalidRawgResponseError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(FavoriteGameDuplicateError)
+    async def favorite_game_duplicate_handler(
+        _request: Request,
+        exc: FavoriteGameDuplicateError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(FavoriteGameNotFoundError)
+    async def favorite_game_not_found_handler(
+        _request: Request,
+        exc: FavoriteGameNotFoundError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
+        )
+
+    @app.exception_handler(GameAlreadyExistsError)
+    async def game_already_exists_handler(
+        _request: Request,
+        exc: GameAlreadyExistsError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_409_CONFLICT,
+            content={
+                "detail": str(exc),
+                "game_id": str(exc.game_id),
+            },
         )

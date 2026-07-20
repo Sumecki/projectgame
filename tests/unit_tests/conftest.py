@@ -1,13 +1,18 @@
 from datetime import UTC, datetime, timedelta
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import jwt
 import pytest
 
 from app.core.domain.models.user import User
+from app.core.domain.models.game import Game
+from app.core.repository.favorite_game_repository import FavoriteGameRepository
+from app.core.repository.game_repository import GameRepository
 from app.core.repository.user_repository import UserRepository
+from app.core.services.game_service import GameService
 from app.core.services.rawg_client import RawgApiClient
 from app.core.services.user_service import UserService
+from app.core.services.favorite_game_service import FavoriteGameService
 
 
 @pytest.fixture
@@ -93,3 +98,67 @@ def current_user_dependencies():
                 user_service_class_mock,
                 user_service_instance_mock,
             )
+
+@pytest.fixture
+def mocks_for_game_service():
+    game_repository_mock = Mock(spec=GameRepository)
+    rawg_client_mock = Mock(spec=RawgApiClient)
+
+    rawg_client_mock.search_games = AsyncMock()
+    rawg_client_mock.get_game = AsyncMock()
+
+    return game_repository_mock, rawg_client_mock
+
+@pytest.fixture
+def game_service(mocks_for_game_service):
+    game_repository_mock, rawg_client_mock = mocks_for_game_service
+    
+    game_service = GameService(
+        game_repository=game_repository_mock,
+        rawg_client=rawg_client_mock,
+    )
+    return game_service
+
+@pytest.fixture
+def rawg_search_games_response():
+    return {
+        "results": [
+            {
+                "id": 3328,
+                "name": "The Witcher 3",
+                "released": "2015-05-18",
+            },
+            {
+                "id": 2095,
+                "name": "The Witcher 2: Assassins of Kings",
+                "released": "2011-05-17",
+            },
+        ]
+    }
+
+@pytest.fixture
+def favorite_game_repository_mock() -> Mock:
+    return Mock(spec=FavoriteGameRepository)
+
+@pytest.fixture
+def game_repository_mock() -> Mock:
+    return Mock(spec=GameRepository)
+
+@pytest.fixture
+def favorite_game_service(
+    favorite_game_repository_mock: Mock,
+    game_repository_mock: Mock
+) -> FavoriteGameService:
+    return FavoriteGameService(
+        favorite_game_repository=favorite_game_repository_mock,
+        game_repository=game_repository_mock
+    )
+
+@pytest.fixture
+def existing_game() -> Game:
+    return Game(
+            rawg_id=3328,
+            name="The Witcher 3",
+            description="Open world RPG.",
+            genres=["RPG", "Adventure"],
+        )
