@@ -33,3 +33,7 @@ class GameAlreadyExistsError(Exception):
     def __init__(self, game_id: UUID) -> None:
         self.game_id = game_id
         super().__init__("Game already exists")
+
+
+class GameDescriptionNotAvailableError(Exception):
+    pass

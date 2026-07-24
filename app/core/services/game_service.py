@@ -1,4 +1,5 @@
 from typing import Any
+from uuid import UUID
 
 from app.core.domain.models.game import Game
 from app.core.domain.schemas.game import GameSearchResult
@@ -51,6 +52,14 @@ class GameService:
 
     def get_game_by_rawg_id(self, rawg_id: int) -> Game:
         game = self.game_repository.get_game_by_rawg_id(rawg_id)
+
+        if game is None:
+            raise GameNotFoundError("Game not found")
+
+        return game
+
+    def get_game_by_game_id(self, game_id: UUID) -> Game:
+        game = self.game_repository.get_game_by_id(game_id)
 
         if game is None:
             raise GameNotFoundError("Game not found")

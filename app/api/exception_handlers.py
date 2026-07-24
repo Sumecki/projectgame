@@ -5,6 +5,7 @@ from app.core.exceptions import (
     FavoriteGameDuplicateError,
     FavoriteGameNotFoundError,
     GameAlreadyExistsError,
+    GameDescriptionNotAvailableError,
     GameNotFoundError,
     InvalidCredentialsError,
     InvalidRawgResponseError,
@@ -40,7 +41,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: TokenValidationError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": str(exc)}
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"detail": str(exc)},
         )
 
     @app.exception_handler(GameNotFoundError)
@@ -49,7 +51,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: GameNotFoundError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": str(exc)},
         )
 
     @app.exception_handler(InvalidRawgResponseError)
@@ -58,7 +61,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: InvalidRawgResponseError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_502_BAD_GATEWAY, content={"detail": str(exc)}
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            content={"detail": str(exc)},
         )
 
     @app.exception_handler(FavoriteGameDuplicateError)
@@ -67,7 +71,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: FavoriteGameDuplicateError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_409_CONFLICT, content={"detail": str(exc)}
+            status_code=status.HTTP_409_CONFLICT,
+            content={"detail": str(exc)},
         )
 
     @app.exception_handler(FavoriteGameNotFoundError)
@@ -76,7 +81,8 @@ def register_exception_handlers(app: FastAPI) -> None:
         exc: FavoriteGameNotFoundError,
     ) -> JSONResponse:
         return JSONResponse(
-            status_code=status.HTTP_404_NOT_FOUND, content={"detail": str(exc)}
+            status_code=status.HTTP_404_NOT_FOUND,
+            content={"detail": str(exc)},
         )
 
     @app.exception_handler(GameAlreadyExistsError)
@@ -90,4 +96,14 @@ def register_exception_handlers(app: FastAPI) -> None:
                 "detail": str(exc),
                 "game_id": str(exc.game_id),
             },
+        )
+
+    @app.exception_handler(GameDescriptionNotAvailableError)
+    async def game_description_not_available_handler(
+        _request: Request,
+        exc: GameDescriptionNotAvailableError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": str(exc)},
         )

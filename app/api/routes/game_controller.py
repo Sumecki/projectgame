@@ -1,12 +1,18 @@
 from typing import Annotated
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
 from app.core.db.database import get_db
 from app.core.domain.models.game import Game
-from app.core.domain.schemas.game import GameResponse, GameSearchResult
+from app.core.domain.schemas.game import (
+    GameResponse,
+    GameSearchResult,
+    GeneratedGameDescriptionResponse,
+)
 from app.core.repository.game_repository import GameRepository
+from app.core.services.bedrock_description_service import BedrockDescriptionService
 from app.core.services.game_service import GameService
 from app.core.services.rawg_client import RawgApiClient
 
@@ -52,3 +58,26 @@ async def create_game_from_rawg(
     game_service: GameService = Depends(get_game_service),
 ) -> Game:
     return await game_service.create_game_from_rawg(rawg_id)
+
+
+@game_router.post(
+    "/{game_id}/b-movie-description",
+    response_model=GeneratedGameDescriptionResponse,
+)
+def generate_b_movie_description(
+    game_id: UUID,
+    game_service: GameService = Depends(get_game_service),
+    bedrock_service: BedrockDescriptionService = Depends(BedrockDescriptionService),
+) -> GeneratedGameDescriptionResponse:
+    game = game_service.get_game_by_game_id(game_id)
+
+    generated_description = bedrock_service.rewrite_description_as_b_movie_plot(
+        game_name=game.name,
+        game_description=game.description,
+    )
+
+    return GeneratedGameDescriptionResponse(
+        game_id=game.id,
+        game_name=game.name,
+        generated_description=generated_description,
+    )

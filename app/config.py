@@ -15,6 +15,10 @@ class Settings(BaseSettings):
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
 
+    aws_profile: str | None = None
+    aws_region: str = "eu-north-1"
+    bedrock_model_id: str
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
