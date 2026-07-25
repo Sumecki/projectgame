@@ -9,10 +9,12 @@ from app.core.domain.models.game import Game
 from app.core.repository.favorite_game_repository import FavoriteGameRepository
 from app.core.repository.game_repository import GameRepository
 from app.core.repository.user_repository import UserRepository
+from app.core.services.bedrock_description_service import BedrockDescriptionService
 from app.core.services.game_service import GameService
 from app.core.services.rawg_client import RawgApiClient
 from app.core.services.user_service import UserService
 from app.core.services.favorite_game_service import FavoriteGameService
+
 
 
 @pytest.fixture
@@ -162,3 +164,34 @@ def existing_game() -> Game:
             description="Open world RPG.",
             genres=["RPG", "Adventure"],
         )
+
+@pytest.fixture
+def bedrock_client_mock():
+    with patch (
+        "app.core.services.bedrock_description_service.boto3.Session",
+    ) as session_mock:
+        bedrock_client_mock = Mock()
+
+        session_mock.return_value.client.return_value = bedrock_client_mock
+
+        yield bedrock_client_mock
+
+@pytest.fixture
+def bedrock_service(
+    bedrock_client_mock,
+) -> BedrockDescriptionService:
+    return BedrockDescriptionService()
+
+@pytest.fixture
+def bedrock_response():
+    return {
+        "output": {
+            "message": {
+                "content": [
+                    {
+                        "text": "A cheap monster movie from the 1980s.",
+                    }
+                ],
+            }
+        }
+    }

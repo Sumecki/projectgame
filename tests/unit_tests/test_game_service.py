@@ -1,3 +1,5 @@
+from uuid import uuid4
+
 import pytest
 
 from app.core.domain.schemas.game import GameSearchResult
@@ -195,3 +197,39 @@ class TestGameService:
         )
         rawg_client_mock.get_game.assert_not_awaited()
         game_repository_mock.create_game.assert_not_called()
+
+    def test_get_game_by_game_id_returns_game_from_db(
+        self,
+        mocks_for_game_service,
+        game_service,
+        existing_game,
+    ):
+        game_repository_mock, _rawg_client_mock = mocks_for_game_service
+        game_repository_mock.get_game_by_id.return_value = existing_game
+
+        game = game_service.get_game_by_game_id(existing_game.id)
+
+        assert game is existing_game
+        game_repository_mock.get_game_by_id.assert_called_once_with(
+            existing_game.id,
+        )
+
+    def test_get_game_by_game_id_raises_error_when_game_not_in_db(
+        self,
+        mocks_for_game_service,
+        game_service,
+    ):
+        game_repository_mock, _rawg_client_mock = mocks_for_game_service
+        game_id = uuid4()
+
+        game_repository_mock.get_game_by_id.return_value = None
+
+        with pytest.raises(
+            GameNotFoundError,
+            match="Game not found",
+        ):
+            game_service.get_game_by_game_id(game_id)
+
+        game_repository_mock.get_game_by_id.assert_called_once_with(
+            game_id,
+        )
