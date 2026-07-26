@@ -2,7 +2,6 @@ services:
   backend:
     tty: true
 
-
     build:
       context: .
       dockerfile: Dockerfile

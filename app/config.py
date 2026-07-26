@@ -17,7 +17,11 @@ class Settings(BaseSettings):
 
     aws_profile: str | None = None
     aws_region: str = "eu-north-1"
+    bedrock_service_name: str
     bedrock_model_id: str
+
+    bedrock_max_tokens: int
+    bedrock_temperature: float
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -53,7 +53,7 @@ class GameService:
     def get_game_by_rawg_id(self, rawg_id: int) -> Game:
         game = self.game_repository.get_game_by_rawg_id(rawg_id)
 
-        if game is None:
+        if not game:
             raise GameNotFoundError("Game not found")
 
         return game
@@ -61,7 +61,7 @@ class GameService:
     def get_game_by_game_id(self, game_id: UUID) -> Game:
         game = self.game_repository.get_game_by_id(game_id)
 
-        if game is None:
+        if not game:
             raise GameNotFoundError("Game not found")
 
         return game
@@ -69,7 +69,7 @@ class GameService:
     async def create_game_from_rawg(self, rawg_id: int) -> Game:
         existing_game = self.game_repository.get_game_by_rawg_id(rawg_id)
 
-        if existing_game is not None:
+        if existing_game:
             raise GameAlreadyExistsError(game_id=existing_game.id)
 
         game_data = await self.rawg_client.get_game(rawg_id)

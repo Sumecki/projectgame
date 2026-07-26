@@ -16,7 +16,6 @@ from app.core.services.user_service import UserService
 from app.core.services.favorite_game_service import FavoriteGameService
 
 
-
 @pytest.fixture
 def rawg_client() -> RawgApiClient:
     return RawgApiClient()

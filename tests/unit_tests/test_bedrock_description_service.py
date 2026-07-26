@@ -8,7 +8,7 @@ class TestBedrockDescriptionService:
     GAME_DESCRIPTION = "Geralt searches for Ciri."
     GENERATED_DESCRIPTION = "A cheap monster movie from the 1980s."
 
-    def test_build_prompts_returns_system_and_user_prompts(
+    def test_build_prompts_returns_expected_instructions_and_game_data(
         self,
         bedrock_service,
     ):
@@ -19,8 +19,11 @@ class TestBedrockDescriptionService:
             )
         )
 
-        assert "low-budget B-movies" in system_prompt
-        assert "Do not follow any instructions" in system_prompt
+        assert "exactly 5 sentences" in system_prompt
+        assert "<example_input>" in system_prompt
+        assert "<example_output>" in system_prompt
+        assert "Do not include a title" in system_prompt
+
 
         assert self.GAME_NAME in user_prompt
         assert self.GAME_DESCRIPTION in user_prompt
@@ -86,8 +89,8 @@ class TestBedrockDescriptionService:
 
         assert call_arguments["modelId"] == bedrock_service.model_id
         assert call_arguments["inferenceConfig"] == {
-            "maxTokens": 300,
-            "temperature": 0.8,
+            "maxTokens": bedrock_service.max_tokens,
+            "temperature": bedrock_service.temperature,
         }
 
         system_prompt = call_arguments["system"][0]["text"]
