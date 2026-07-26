@@ -4,8 +4,10 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, Query, status
 from sqlalchemy.orm import Session
 
+from app.auth.auth import get_current_user
 from app.core.db.database import get_db
 from app.core.domain.models.game import Game
+from app.core.domain.models.user import User
 from app.core.domain.schemas.game import (
     GameResponse,
     GameSearchResult,
@@ -68,6 +70,7 @@ def generate_b_movie_description(
     game_id: UUID,
     game_service: GameService = Depends(get_game_service),
     bedrock_service: BedrockDescriptionService = Depends(BedrockDescriptionService),
+    _current_user: User = Depends(get_current_user),
 ) -> GeneratedGameDescriptionResponse:
     game = game_service.get_game_by_game_id(game_id)
 
