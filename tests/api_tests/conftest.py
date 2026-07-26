@@ -6,13 +6,14 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session, sessionmaker
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 from app.auth.auth import get_current_user
 from app.auth.security import hash_password
 from app.core.db.base import Base
 from app.core.db.database import get_db
 from app.main import app
+from app.core.services.bedrock_description_service import BedrockDescriptionService
 from app.core.services.rawg_client import RawgApiClient
 
 from app.core.domain.models.user import User
@@ -98,7 +99,7 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
         with TestClient(app) as test_client:
             yield test_client
     finally:
-        app.dependency_overrides.clear()
+        app.dependency_overrides.pop(get_db, None)
 
 
 @pytest.fixture
@@ -233,7 +234,7 @@ def favorite_game_in_db(
     db_session: Session,
     existing_user: User,
     game_in_db: Game,
-):
+) -> FavoriteGame:
     favorite_game = FavoriteGame(
         user_id=existing_user.id,
         game_id=game_in_db.id,
@@ -244,3 +245,16 @@ def favorite_game_in_db(
     db_session.refresh(favorite_game)
 
     return favorite_game
+
+@pytest.fixture
+def bedrock_service_mock() -> Generator[Mock, None, None]:
+    service_mock = Mock(spec=BedrockDescriptionService)
+
+    app.dependency_overrides[BedrockDescriptionService] = lambda: service_mock
+
+    yield service_mock
+
+    app.dependency_overrides.pop(
+        BedrockDescriptionService,
+        None,
+    )
