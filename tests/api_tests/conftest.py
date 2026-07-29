@@ -1,4 +1,5 @@
 from collections.abc import Generator
+from unittest.mock import AsyncMock, Mock, patch
 
 import pytest
 from fastapi.testclient import TestClient
@@ -6,23 +7,21 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.exc import ProgrammingError
 from sqlalchemy.orm import Session, sessionmaker
-from unittest.mock import AsyncMock, Mock, patch
 
 from app.auth.auth import get_current_user
 from app.auth.security import hash_password
 from app.core.db.base import Base
 from app.core.db.database import get_db
-from app.main import app
+from app.core.domain.models.favorite_game import FavoriteGame
+from app.core.domain.models.game import Game
+from app.core.domain.models.user import User
 from app.core.services.bedrock_description_service import BedrockDescriptionService
 from app.core.services.rawg_client import RawgApiClient
-
-from app.core.domain.models.user import User
-from app.core.domain.models.game import Game
-from app.core.domain.models.favorite_game import FavoriteGame
+from app.main import app
 
 
-ROOT_DATABASE_URL = "postgresql+psycopg2://user:password@localhost:5432/postgres"
-TEST_DATABASE_URL = "postgresql+psycopg2://user:password@localhost:5432/projectgame_test"
+ROOT_DATABASE_URL = "postgresql+psycopg2://user:password@postgres-db:5432/postgres"
+TEST_DATABASE_URL = "postgresql+psycopg2://user:password@postgres-db:5432/projectgame_test"
 TEST_DATABASE_NAME = "projectgame_test"
 
 
@@ -103,15 +102,23 @@ def client(db_session: Session) -> Generator[TestClient, None, None]:
 
 
 @pytest.fixture
-def register_payload() -> dict[str, str]:
-    return {
-        "username": "John",
-        "email": "jdoe@gmail.com",
-        "password": "SecretPassword!",
-    }
+def authenticated_client(
+    client: TestClient,
+    existing_user: User,
+) -> Generator[TestClient, None, None]:
+    def override_get_current_user() -> User:
+        return existing_user
+
+    app.dependency_overrides[get_current_user] = override_get_current_user
+
+    try:
+        yield client
+    finally:
+        app.dependency_overrides.pop(get_current_user, None)
+
 
 @pytest.fixture
-def rawg_search_mock():
+def rawg_search_mock() -> Generator[AsyncMock, None, None]:
     with patch.object(
         RawgApiClient,
         "search_games",
@@ -129,8 +136,9 @@ def rawg_search_mock():
 
         yield search_mock
 
+
 @pytest.fixture
-def rawg_get_game_mock():
+def rawg_get_game_mock() -> Generator[AsyncMock, None, None]:
     with patch.object(
         RawgApiClient,
         "get_game",
@@ -148,6 +156,68 @@ def rawg_get_game_mock():
 
         yield get_game_mock
 
+
+@pytest.fixture
+def bedrock_service_mock() -> Generator[Mock, None, None]:
+    service_mock = Mock(spec=BedrockDescriptionService)
+
+    app.dependency_overrides[BedrockDescriptionService] = lambda: service_mock
+
+    yield service_mock
+
+    app.dependency_overrides.pop(
+        BedrockDescriptionService,
+        None,
+    )
+
+
+@pytest.fixture
+def existing_user(db_session: Session) -> User:
+    user = User(
+        username="John",
+        email="jdoe@gmail.com",
+        hashed_password=hash_password("SecretPassword!"),
+    )
+    db_session.add(user)
+    db_session.commit()
+    db_session.refresh(user)
+
+    return user
+
+
+@pytest.fixture
+def additional_users(db_session: Session) -> list[User]:
+    users = [
+        User(
+            username="Tomasz",
+            email="tomasz@gmail.com",
+            hashed_password=hash_password("SecretPassword!"),
+        ),
+        User(
+            username="Stefan",
+            email="stefan@gmail.com",
+            hashed_password=hash_password("SecretPassword!"),
+        ),
+    ]
+
+    db_session.add_all(users)
+    db_session.commit()
+
+    for user in users:
+        db_session.refresh(user)
+
+    return users
+
+
+@pytest.fixture
+def register_payload() -> dict[str, str]:
+    return {
+        "username": "John",
+        "email": "jdoe@gmail.com",
+        "password": "SecretPassword!",
+    }
+
+
 @pytest.fixture
 def game_in_db(db_session: Session) -> Game:
     game = Game(
@@ -164,34 +234,6 @@ def game_in_db(db_session: Session) -> Game:
     return game
 
 @pytest.fixture
-def existing_user(db_session: Session) -> User:
-    user = User(
-        username="John",
-        email="jdoe@gmail.com",
-        hashed_password=hash_password("SecretPassword!"),
-    )
-    db_session.add(user)
-    db_session.commit()
-    db_session.refresh(user)
-
-    return user
-
-@pytest.fixture
-def authenticated_client(
-    client: TestClient,
-    existing_user: User,
-) -> Generator[TestClient, None, None]:
-    def override_get_current_user() -> User:
-        return existing_user
-
-    app.dependency_overrides[get_current_user] = override_get_current_user
-
-    try:
-        yield client
-    finally:
-        app.dependency_overrides.pop(get_current_user, None)
-
-@pytest.fixture
 def second_game_in_db(db_session: Session) -> Game:
     game = Game(
         rawg_id=3498,
@@ -206,28 +248,6 @@ def second_game_in_db(db_session: Session) -> Game:
 
     return game
 
-@pytest.fixture
-def additional_users(db_session: Session) -> list[User]:
-    users = [
-            User(
-            username="Tomasz",
-            email="tomasz@gmail.com",
-            hashed_password=hash_password("SecretPassword!"),
-        ),
-            User(
-            username="Stefan",
-            email="stefan@gmail.com",
-            hashed_password=hash_password("SecretPassword!"),
-        ),
-    ]
-
-    db_session.add_all(users)
-    db_session.commit()
-
-    for user in users:
-        db_session.refresh(user)
-
-    return users
 
 @pytest.fixture
 def favorite_game_in_db(
@@ -245,16 +265,3 @@ def favorite_game_in_db(
     db_session.refresh(favorite_game)
 
     return favorite_game
-
-@pytest.fixture
-def bedrock_service_mock() -> Generator[Mock, None, None]:
-    service_mock = Mock(spec=BedrockDescriptionService)
-
-    app.dependency_overrides[BedrockDescriptionService] = lambda: service_mock
-
-    yield service_mock
-
-    app.dependency_overrides.pop(
-        BedrockDescriptionService,
-        None,
-    )
