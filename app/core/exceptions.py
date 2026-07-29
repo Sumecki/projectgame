@@ -37,3 +37,7 @@ class GameAlreadyExistsError(Exception):
 
 class GameDescriptionNotAvailableError(Exception):
     pass
+
+
+class BedrockGenerationError(Exception):
+    pass

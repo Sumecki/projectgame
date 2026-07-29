@@ -2,6 +2,7 @@ from fastapi import FastAPI, Request, status
 from fastapi.responses import JSONResponse
 
 from app.core.exceptions import (
+    BedrockGenerationError,
     FavoriteGameDuplicateError,
     FavoriteGameNotFoundError,
     GameAlreadyExistsError,
@@ -105,5 +106,15 @@ def register_exception_handlers(app: FastAPI) -> None:
     ) -> JSONResponse:
         return JSONResponse(
             status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": str(exc)},
+        )
+
+    @app.exception_handler(BedrockGenerationError)
+    async def bedrock_generation_error_handler(
+        _request: Request,
+        exc: BedrockGenerationError,
+    ) -> JSONResponse:
+        return JSONResponse(
+            status_code=status.HTTP_502_BAD_GATEWAY,
             content={"detail": str(exc)},
         )

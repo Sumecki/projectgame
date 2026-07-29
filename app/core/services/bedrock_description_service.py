@@ -1,9 +1,13 @@
 from typing import Any
 
 import boto3
+from botocore.exceptions import BotoCoreError, ClientError
 
 from app.config import get_settings
-from app.core.exceptions import GameDescriptionNotAvailableError
+from app.core.exceptions import (
+    BedrockGenerationError,
+    GameDescriptionNotAvailableError,
+)
 
 settings = get_settings()
 
@@ -69,28 +73,33 @@ class BedrockDescriptionService:
         system_prompt: str,
         user_prompt: str,
     ) -> str:
-        response = self.client.converse(
-            modelId=self.model_id,
-            system=[
-                {
-                    "text": system_prompt,
-                }
-            ],
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "text": user_prompt,
-                        }
-                    ],
-                }
-            ],
-            inferenceConfig={
-                "maxTokens": self.max_tokens,
-                "temperature": self.temperature,
-            },
-        )
+        try:
+            response = self.client.converse(
+                modelId=self.model_id,
+                system=[
+                    {
+                        "text": system_prompt,
+                    }
+                ],
+                messages=[
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "text": user_prompt,
+                            }
+                        ],
+                    }
+                ],
+                inferenceConfig={
+                    "maxTokens": self.max_tokens,
+                    "temperature": self.temperature,
+                },
+            )
+        except (BotoCoreError, ClientError) as exc:
+            raise BedrockGenerationError(
+                "Could not generate game description",
+            ) from exc
 
         return self._extract_text(response)
 
@@ -98,7 +107,19 @@ class BedrockDescriptionService:
         self,
         response: dict[str, Any],
     ) -> str:
-        return response["output"]["message"]["content"][0]["text"]
+        try:
+            generated_text = response["output"]["message"]["content"][0]["text"]
+        except (KeyError, IndexError, TypeError) as exc:
+            raise BedrockGenerationError(
+                "Invalid response from Bedrock",
+            ) from exc
+
+        if not isinstance(generated_text, str) or not generated_text:
+            raise BedrockGenerationError(
+                "Invalid response from Bedrock",
+            )
+
+        return generated_text
 
     def rewrite_description_as_b_movie_plot(
         self,
