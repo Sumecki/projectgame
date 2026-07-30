@@ -6,7 +6,10 @@ from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.domain.models.game import Game
-from app.core.exceptions import GameDescriptionNotAvailableError
+from app.core.exceptions import (
+    BedrockGenerationError,
+    GameDescriptionNotAvailableError,
+)
 
 
 class TestSearchGamesEndpoint:
@@ -304,3 +307,28 @@ class TestGenerateBMovieDescriptionEndpoint:
             game_name=game_in_db.name,
             game_description=None,
         )
+
+    def test_generate_b_movie_description_returns_502_when_bedrock_service_raises_error(
+        self,
+        authenticated_client: TestClient,
+        game_in_db: Game,
+        bedrock_service_mock: Mock,
+    ):
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.side_effect = (
+            BedrockGenerationError(
+                "Invalid response from Bedrock",
+            )
+        )
+
+        response = authenticated_client.post(f"/games/{game_in_db.id}/b-movie-description")
+
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
+        assert response.json() == {
+            "detail": "Invalid response from Bedrock"
+        }
+
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_called_once_with(
+            game_name=game_in_db.name,
+            game_description=game_in_db.description,
+        )
+        

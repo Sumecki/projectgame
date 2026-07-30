@@ -1,6 +1,10 @@
 import pytest
+from botocore.exceptions import ClientError, EndpointConnectionError
 
-from app.core.exceptions import GameDescriptionNotAvailableError
+from app.core.exceptions import (
+    BedrockGenerationError,
+    GameDescriptionNotAvailableError,
+)
 
 
 class TestBedrockDescriptionService:
@@ -24,7 +28,6 @@ class TestBedrockDescriptionService:
         assert "<example_output>" in system_prompt
         assert "Do not include a title" in system_prompt
 
-
         assert self.GAME_NAME in user_prompt
         assert self.GAME_DESCRIPTION in user_prompt
         assert "<game_description>" in user_prompt
@@ -38,6 +41,57 @@ class TestBedrockDescriptionService:
         result = bedrock_service._extract_text(bedrock_response)
 
         assert result == self.GENERATED_DESCRIPTION
+
+    @pytest.mark.parametrize(
+        "invalid_response",
+        [
+            pytest.param({}, id="missing-output"),
+            pytest.param(
+                {
+                    "output": {
+                        "message": {
+                            "content": [],
+                        }
+                    }
+                },
+                id="empty-content",
+            ),
+            pytest.param(
+                {
+                    "output": {
+                        "message": None,
+                    }
+                },
+                id="message-is-none",
+            ),
+        ],
+    )
+    def test_extract_text_raises_error_for_invalid_response_structure(
+        self,
+        bedrock_service,
+        invalid_response,
+    ):
+        with pytest.raises(BedrockGenerationError, match="Invalid response from Bedrock"):
+            bedrock_service._extract_text(invalid_response)
+
+    @pytest.mark.parametrize(
+        "generated_text",
+        [
+            pytest.param("", id="text-is-empty"),
+            pytest.param(None, id="text-is-none"),
+            pytest.param(123, id="text-is-not-string"),
+        ],
+    )
+    def test_extract_text_raises_error_when_generated_text_is_invalid(
+        self,
+        bedrock_service,
+        bedrock_response,
+        generated_text,
+    ):
+        bedrock_response["output"]["message"]["content"][0]["text"] = generated_text
+
+        with pytest.raises(BedrockGenerationError, match="Invalid response from Bedrock"):
+            bedrock_service._extract_text(bedrock_response)
 
     def test_generate_text_returns_extracted_text(
         self,
@@ -53,6 +107,43 @@ class TestBedrockDescriptionService:
         )
 
         assert result == self.GENERATED_DESCRIPTION
+
+    @pytest.mark.parametrize(
+        "bedrock_error",
+        [
+            pytest.param(
+                ClientError(
+                    error_response={
+                        "Error": {
+                            "Code": "ServiceUnavailableException",
+                            "Message": "Service unavailable",
+                        }
+                    },
+                    operation_name="Converse",
+                ),
+                id="client-error",
+            ),
+            pytest.param(
+                EndpointConnectionError(
+                    endpoint_url="https://bedrock.example.com",
+                ),
+                id="connection-error",
+            ),
+        ],
+    )
+    def test_generate_text_raises_error_when_bedrock_request_fails(
+        self,
+        bedrock_service,
+        bedrock_client_mock,
+        bedrock_error,
+    ):
+        bedrock_client_mock.converse.side_effect = bedrock_error
+
+        with pytest.raises(BedrockGenerationError, match="Could not generate game description"):
+            bedrock_service._generate_text(
+                system_prompt="System prompt",
+                user_prompt="User prompt",
+            )
 
     def test_rewrite_description_as_b_movie_plot_returns_generated_text(
         self,
