@@ -109,8 +109,8 @@ class TestLoginEndpoint:
 
         login_response = client.post(
             "/auth/login",
-            json={
-                "email": register_payload["email"],
+            data={
+                "username": register_payload["email"],
                 "password": register_payload["password"],
             },
         )
@@ -135,7 +135,7 @@ class TestLoginEndpoint:
             ),
             pytest.param(
                 {
-                    "email": "other@gmail.com",
+                    "username": "other@gmail.com",
                 },
                 id="unknown-email",
             ),
@@ -152,12 +152,12 @@ class TestLoginEndpoint:
         assert register_response.status_code == status.HTTP_201_CREATED
 
         login_payload = {
-            "email": register_payload["email"],
+            "username": register_payload["email"],
             "password": register_payload["password"],
             **payload_override,
         }
 
-        login_response = client.post("/auth/login", json=login_payload)
+        login_response = client.post("/auth/login", data=login_payload)
 
         assert login_response.status_code == status.HTTP_401_UNAUTHORIZED
         assert login_response.json() == {"detail": "Invalid email or password"}
@@ -168,7 +168,7 @@ class TestLoginEndpoint:
     ):
         response = client.post(
             "/auth/login",
-            json={
+            data={
                 "email": "invalid-email",
                 "password": "SecretPassword!",
             },
@@ -191,8 +191,8 @@ class TestUsersMeEndpoint:
 
         login_response = client.post(
             "/auth/login",
-            json={
-                "email": register_payload["email"],
+            data={
+                "username": register_payload["email"],
                 "password": register_payload["password"],
             },
         )
