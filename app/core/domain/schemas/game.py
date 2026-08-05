@@ -17,3 +17,9 @@ class GameSearchResult(BaseModel):
     rawg_id: int
     name: str
     released: str | None = None
+
+
+class GeneratedGameDescriptionResponse(BaseModel):
+    game_id: UUID
+    game_name: str
+    generated_description: str

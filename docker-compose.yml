@@ -1,6 +1,7 @@
 services:
   backend:
     tty: true
+
     build:
       context: .
       dockerfile: Dockerfile
@@ -12,6 +13,10 @@ services:
 
     env_file:
       - .env
+
+    environment:
+      AWS_SHARED_CREDENTIALS_FILE: /run/aws/credentials
+      AWS_CONFIG_FILE: /run/aws/config
 
     command: >
       uv run uvicorn app.main:app
@@ -25,6 +30,16 @@ services:
     volumes: 
       - .:/code
       - /code/.venv
+
+      - type: bind
+        source: ${USERPROFILE}/.aws/projectgame-credentials
+        target: /run/aws/credentials
+        read_only: true
+
+      - type: bind
+        source: ${USERPROFILE}/.aws/projectgame-config
+        target: /run/aws/config
+        read_only: true
 
   postgres-db:
     image: postgres:16

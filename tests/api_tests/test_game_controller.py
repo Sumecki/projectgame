@@ -1,10 +1,15 @@
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock
+from uuid import uuid4
 
 from fastapi import status
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.domain.models.game import Game
+from app.core.exceptions import (
+    BedrockGenerationError,
+    GameDescriptionNotAvailableError,
+)
 
 
 class TestSearchGamesEndpoint:
@@ -216,3 +221,114 @@ class TestCreateGameFromRawgEndpoint:
         )
 
         assert game_from_db is None
+
+
+class TestGenerateBMovieDescriptionEndpoint:
+    def test_generate_b_movie_description_returns_generated_desc(
+        self,
+        authenticated_client: TestClient,
+        game_in_db: Game,
+        bedrock_service_mock: Mock,
+    ):
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.return_value = (
+            "A cheap monster movie from the 1980s."
+        )
+
+        response = authenticated_client.post(f"/games/{game_in_db.id}/b-movie-description")
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.json() == {
+            "game_id": str(game_in_db.id),
+            "game_name": game_in_db.name,
+            "generated_description": "A cheap monster movie from the 1980s.",
+        }
+
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_called_once_with(
+            game_name=game_in_db.name,
+            game_description=game_in_db.description,
+        )
+
+    def test_generate_b_movie_description_returns_404_when_game_not_found(
+        self,
+        authenticated_client: TestClient,
+        bedrock_service_mock: Mock,
+    ):
+        response = authenticated_client.post(f"/games/{uuid4()}/b-movie-description")
+
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_not_called()
+
+    def test_generate_b_movie_description_returns_401_when_user_not_authenticated(
+        self,
+        client: TestClient,
+        game_in_db: Game,
+        bedrock_service_mock: Mock,
+    ):
+        response = client.post(f"/games/{game_in_db.id}/b-movie-description")
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_not_called()
+
+    def test_generate_b_movie_description_returns_422_for_invalid_game_id(
+        self,
+        authenticated_client: TestClient,
+        bedrock_service_mock: Mock,
+    ):
+        response = authenticated_client.post("/games/not-a-uuid/b-movie-description")
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_not_called()
+
+    def test_generate_b_movie_description_returns_422_when_no_game_description(
+        self,
+        authenticated_client: TestClient,
+        game_in_db: Game,
+        db_session: Session,
+        bedrock_service_mock: Mock,
+    ):
+        game_in_db.description = None
+        db_session.commit()
+        db_session.refresh(game_in_db)
+
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.side_effect = (
+            GameDescriptionNotAvailableError(
+                "Game description is not available",
+            )
+        )
+
+        response = authenticated_client.post(f"/games/{game_in_db.id}/b-movie-description")
+
+        assert response.status_code == status.HTTP_422_UNPROCESSABLE_CONTENT
+        assert response.json() == {
+            "detail": "Game description is not available",
+        }
+
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_called_once_with(
+            game_name=game_in_db.name,
+            game_description=None,
+        )
+
+    def test_generate_b_movie_description_returns_502_when_bedrock_service_raises_error(
+        self,
+        authenticated_client: TestClient,
+        game_in_db: Game,
+        bedrock_service_mock: Mock,
+    ):
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.side_effect = (
+            BedrockGenerationError(
+                "Invalid response from Bedrock",
+            )
+        )
+
+        response = authenticated_client.post(f"/games/{game_in_db.id}/b-movie-description")
+
+        assert response.status_code == status.HTTP_502_BAD_GATEWAY
+        assert response.json() == {
+            "detail": "Invalid response from Bedrock"
+        }
+
+        bedrock_service_mock.rewrite_description_as_b_movie_plot.assert_called_once_with(
+            game_name=game_in_db.name,
+            game_description=game_in_db.description,
+        )
+        
