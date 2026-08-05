@@ -68,7 +68,7 @@ async def create_game_from_rawg(
 )
 def generate_b_movie_description(
     game_id: UUID,
-    _current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
     game_service: GameService = Depends(get_game_service),
     bedrock_service: BedrockDescriptionService = Depends(BedrockDescriptionService),
 ) -> GeneratedGameDescriptionResponse:
